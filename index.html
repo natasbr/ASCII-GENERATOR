@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador Voxel em ASCII 3D - Web Edition</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        #ascii-container {
+            white-space: pre;
+            line-height: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: rgba(0, 20, 0, 0.9);
+            border: 2px solid #0f0;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            pointer-events: auto;
+            box-shadow: 0 0 20px #0f0;
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            text-align: center;
+            text-shadow: 0 0 5px #0f0;
+        }
+        
+        p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        input[type="text"], input[type="password"], select {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            font-family: inherit;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        button {
+            background: #002200;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        button:hover {
+            background: #0f0;
+            color: #000;
+        }
+
+        button:disabled {
+            background: #333;
+            color: #777;
+            border-color: #555;
+            cursor: not-allowed;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(0, 40, 0, 0.5);
+        }
+
+        .list-item:hover {
+            background: rgba(0, 80, 0, 0.8);
+        }
+
+        .list-item-title {
+            flex-grow: 1;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: auto;
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #0f0;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .hud.active {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            display: none;
+            z-index: 5;
+        }
+        
+        .crosshair.active {
+            display: block;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #001100; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0f0; 
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="ascii-container"></div>
+    <div id="crosshair" class="crosshair">+</div>
+
+    <div id="ui-layer">
+        
+        <div id="hud" class="hud">
+            <button onclick="exitToMenu()">🔙 Voltar ao Menu</button>
+            <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()">➕ Spawnar Objeto</button>
+            <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
+        </div>
+
+        <div id="panel-menu" class="panel active">
+            <h1>GERADOR VOXEL ASCII 3D</h1>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="showPanel('panel-create')" style="flex: 2;">✨ Criar Novo</button>
+                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">📥 Importar</button>
+            </div>
+            
+            <button onclick="enterRoom()" style="margin-bottom: 15px;">🚪 Entrar no Quarto 3D (Modo FPS)</button>
+            <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;">🔑 Configurar API Key (Gemini)</button>
+            
+            <h2 style="margin-top: 20px;">Meus Objetos</h2>
+            <div id="objects-list" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+
+        <div id="panel-api" class="panel">
+            <h2>Configuração da API</h2>
+            <p>Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
+            <input type="password" id="api-key-input" placeholder="AIzaSy...">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="saveApiKey()" style="flex: 1;">Salvar Chave</button>
+                <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;">Deletar Chave</button>
+            </div>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Voltar</button>
+        </div>
+
+        <div id="panel-create" class="panel">
+            <h2>Criar Novo Objeto</h2>
+            <p>Escolha o modelo de IA que deseja usar:</p>
+            <select id="model-select">
+                <option value="gemini-3.6-flash">Gemini 3.6 Flash (Recomendado)</option>
+                <option value="gemini-3.6-pro">Gemini 3.6 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </select>
+            <p>Descreva o objeto que deseja gerar em Voxel 3D:</p>
+            <input type="text" id="prompt-input" placeholder="Ex: Uma espada mágica brilhante...">
+            <button id="generate-btn" onclick="generateObject()" style="margin-top: 10px;">Gerar e Visualizar</button>
+            <div id="loading-msg" style="display:none; text-align:center; margin: 10px 0;">[ GERANDO VIA IA... POR FAVOR AGUARDE ]</div>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Cancelar e Voltar</button>
+        </div>
+        
+        <div id="panel-spawn" class="panel">
+            <h2>Escolha um objeto para spawnar</h2>
+            <div id="spawn-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 10px;"></div>
+            <button onclick="closeSpawnMenu()" style="color: #ff5555; border-color: #ff5555;">Cancelar</button>
+        </div>
+
+    </div>
+
+    <!-- Hidden file input for importing -->
+    <input type="file" id="import-file" style="display: none;" accept=".js,.json,application/javascript,application/json" onchange="handleImport(event)">
+
+    <script>
+        // ==========================================
+        // STATE & STORAGE
+        // ==========================================
+        let voxelObjects = JSON.parse(localStorage.getItem('voxel_objects')) || [];
+        let currentMode = 'menu'; 
+        
+        const systemPrompt = `Você é um assistente que gera objetos 3D usando Three.js.
+O objeto será renderizado em um quarto 3D que mapeia luminosidade para ASCII.
+Sua tarefa é gerar APENAS CÓDIGO JAVASCRIPT VÁLIDO.
+O código deve ser auto-contido.
+Use 'var' em vez de 'const' ou 'let' no nível mais alto se precisar, ou coloque o código dentro de um bloco de função anônima auto-executável '(() => { ... })();' para evitar erros de redeclaração.
+O código deve criar um 'THREE.Group' contendo vários 'THREE.Mesh' com 'THREE.BoxGeometry' e 'THREE.MeshStandardMaterial' que representam o objeto descrito pelo usuário.
+Após criar o grupo e os meshes (que devem ser coloridos), adicione-os à 'window.scene' na posição (0, 0, 0).
+Retorne APENAS o código JavaScript. NÃO use marcação markdown (como \`\`\`javascript).
+Comece imediatamente com o código (por exemplo: '(() => { const objectGroup = new THREE.Group(); ... window.scene.add(objectGroup); })();').
+Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e não se esqueça de ativar 'castShadow = true' e 'receiveShadow = true' nos meshes.`;
+
+        // ==========================================
+        // UI NAVIGATION & API KEY MANAGEMENT
+        // ==========================================
+        function showPanel(panelId) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            if(panelId) {
+                document.getElementById(panelId).classList.add('active');
+            }
+            if(panelId === 'panel-menu') {
+                renderObjectsList();
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            if(key) {
+                localStorage.setItem('gemini_api_key', key);
+                alert("Chave salva com sucesso!");
+                showPanel('panel-menu');
+            }
+        }
+        
+        function deleteApiKey() {
+            localStorage.removeItem('gemini_api_key');
+            document.getElementById('api-key-input').value = "";
+            alert("Chave apagada do armazenamento local!");
+        }
+
+        document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || "";
+
+        function renderObjectsList() {
+            const listDiv = document.getElementById('objects-list');
+            listDiv.innerHTML = '';
+            if(voxelObjects.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; color:#555;">Nenhum objeto criado ainda.</p>';
+                return;
+            }
+            
+            voxelObjects.forEach((obj, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="list-item-title" onclick="enterSimpleView(${index})">${obj.name}</div>
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="exportObject(${index}, 'json')" title="Exportar (.json)" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
+                        <button onclick="exportObject(${index}, 'js')" title="Exportar (.js bruto)" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
+                        <button onclick="deleteObject(${index})" title="Deletar" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+        
+        function deleteObject(index) {
+            if(confirm("Tem certeza que deseja deletar este objeto?")) {
+                voxelObjects.splice(index, 1);
+                localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                renderObjectsList();
+            }
+        }
+
+        // ==========================================
+        // IMPORT / EXPORT LOGIC
+        // ==========================================
+        function triggerImport() {
+            document.getElementById('import-file').click();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                try {
+                    if (file.name.toLowerCase().endsWith('.json')) {
+                        const parsedData = JSON.parse(content);
+                        if (Array.isArray(parsedData)) {
+                            voxelObjects.unshift(...parsedData);
+                        } else if (parsedData.name && parsedData.code) {
+                            voxelObjects.unshift(parsedData);
+                        }
+                    } else {
+                        let rawName = file.name.replace(/\.js$/i, '').replace(/\.txt$/i, '');
+                        voxelObjects.unshift({
+                            name: rawName || 'Objeto Importado',
+                            code: content
+                        });
+                    }
+                    
+                    localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                    renderObjectsList();
+                    alert("Objeto importado com sucesso!");
+                    
+                } catch(err) {
+                    console.error("Erro na importação:", err);
+                    alert("Erro ao importar o arquivo. Verifique o formato.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function exportObject(index, type) {
+            const obj = voxelObjects[index];
+            let content, filename, mimeType;
+
+            if (type === 'json') {
+                content = JSON.stringify(obj, null, 2);
+                filename = `${obj.name.replace(/[^a-z0-9]/gi, '_')}.json`;
+                mimeType = 'application/json';
+            } else { 
+                content = obj.code;
+                filename = `${obj.name.replace(/[^a-z0-9]/gi, '_')}.js`;
+                mimeType = 'application/javascript';
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ==========================================
+        // GEMINI API CALL
+        // ==========================================
+        async function generateObject() {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) {
+                alert("Por favor, configure sua chave de API Gemini primeiro!");
+                showPanel('panel-api');
+                return;
+            }
+
+            const prompt = document.getElementById('prompt-input').value.trim();
+            if(!prompt) return;
+            
+            const model = document.getElementById('model-select').value;
+
+            document.getElementById('generate-btn').disabled = true;
+            document.getElementById('loading-msg').style.display = 'block';
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                const requestBody = {
+                    contents: [{ parts: [{ text: `Crie este objeto: ${prompt}` }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error("A IA não retornou nenhum código. Tente usar outro modelo na lista.");
+                }
+
+                let jsCode = data.candidates[0].content.parts[0].text;
+                jsCode = jsCode.replace(/```[a-z]*\n/gi, '').replace(/```/g, '').trim();
+                
+                const newObj = {
+                    name: prompt.length > 25 ? prompt.substring(0, 25) + '...' : prompt,
+                    code: jsCode
+                };
+                
+                voxelObjects.unshift(newObj);
+                localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                
+                document.getElementById('prompt-input').value = "";
+                
+                enterSimpleView(0);
+                
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao gerar objeto: " + e.message);
+            } finally {
+                document.getElementById('generate-btn').disabled = false;
+                document.getElementById('loading-msg').style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // THREE.JS & ASCII RENDER ENGINE
+        // ==========================================
+        window.scene = new THREE.Scene();
+        window.scene.background = new THREE.Color(0x000000);
+        window.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        window.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        window.renderer = new THREE.WebGLRenderer({ preserveDrawingBuffer: true });
+        window.renderer.shadowMap.enabled = true;
+        window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const asciiContainer = document.getElementById('ascii-container');
+        const ramp = " .',:;clodxkO0KXNWM@".split(''); 
+        
+        let cols, rows, pixels;
+        const charW = 6;
+        const charH = 10;
+
+        function setupAsciiGrid() {
+            cols = Math.floor(window.innerWidth / charW);
+            rows = Math.floor(window.innerHeight / charH);
+            window.renderer.setSize(cols, rows);
+            window.camera.aspect = window.innerWidth / window.innerHeight;
+            window.camera.updateProjectionMatrix();
+            pixels = new Uint8Array(cols * rows * 4);
+        }
+        setupAsciiGrid();
+        window.addEventListener('resize', setupAsciiGrid);
+
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        window.scene.add(ambientLight);
+        
+        const centerLight = new THREE.PointLight(0xaabbff, 1.5, 80);
+        centerLight.position.set(0, 12, 0);
+        centerLight.castShadow = true;
+        centerLight.shadow.bias = -0.001;
+        window.scene.add(centerLight);
+        
+        const ceilingLight = new THREE.PointLight(0xffddaa, 0.8, 60);
+        ceilingLight.position.set(0, 20, 0);
+        ceilingLight.castShadow = true;
+        window.scene.add(ceilingLight);
+
+        window.roomGroup = new THREE.Group();
+        const matFloor = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+        const roomSize = 60;
+        const floorGeo = new THREE.BoxGeometry(roomSize, 1, roomSize);
+        const floor = new THREE.Mesh(floorGeo, matFloor);
+        floor.position.y = -0.5;
+        floor.receiveShadow = true;
+        window.roomGroup.add(floor);
+        window.scene.add(window.roomGroup);
+
+        let currentCustomObjects = [];
+        
+        const originalAdd = window.scene.add.bind(window.scene);
+        window.scene.add = function(...objects) {
+            objects.forEach(obj => {
+                if (window.spawnTargetPosition) {
+                    if (obj.isGroup || obj.isMesh) {
+                        obj.position.copy(window.spawnTargetPosition);
+                    }
+                }
+                if(obj !== ambientLight && obj !== centerLight && obj !== ceilingLight && obj !== window.roomGroup && obj !== pointerLockControls.getObject()) {
+                    currentCustomObjects.push(obj);
+                }
+            });
+            originalAdd(...objects);
+        };
+
+        function clearCustomObjects() {
+            currentCustomObjects.forEach(obj => window.scene.remove(obj));
+            currentCustomObjects = [];
+        }
+
+        const orbitControls = new THREE.OrbitControls(window.camera, document.body);
+        orbitControls.enabled = false;
+        orbitControls.enableDamping = true;
+        orbitControls.dampingFactor = 0.05;
+        
+        const pointerLockControls = new THREE.PointerLockControls(window.camera, document.body);
+        window.scene.add(pointerLockControls.getObject());
+
+        let moveForward = false, moveBackward = false;
+        let moveLeft = false, moveRight = false;
+        let moveUp = false, moveDown = false;
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        document.addEventListener('keydown', (event) => {
+            if(currentMode !== 'room') return;
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight': case 'KeyD': moveRight = true; break;
+                case 'KeyE': moveUp = true; break;
+                case 'KeyQ': moveDown = true; break;
+            }
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            if(currentMode !== 'room') return;
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight': case 'KeyD': moveRight = false; break;
+                case 'KeyE': moveUp = false; break;
+                case 'KeyQ': moveDown = false; break;
+            }
+        });
+
+        document.addEventListener('click', () => {
+            if(currentMode === 'room' && !pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex') {
+                pointerLockControls.lock();
+            }
+        });
+        
+        pointerLockControls.addEventListener('lock', () => {
+            if(window.pendingSpawnCode) {
+                document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o objeto.";
+            } else {
+                document.getElementById('instructions').innerText = "Mouse: Olhar | WASD: Mover | Q/E: Descer/Subir | ESC: Pausar/Menu";
+            }
+        });
+
+        pointerLockControls.addEventListener('unlock', () => {
+            if(currentMode === 'room' && document.getElementById('panel-spawn').style.display !== 'flex') {
+                document.getElementById('instructions').innerText = "Clique na tela para retomar o controle do personagem.";
+            }
+        });
+
+        function enterSimpleView(objIndex) {
+            currentMode = 'simple';
+            showPanel(null); 
+            document.getElementById('hud').classList.add('active');
+            document.getElementById('crosshair').classList.remove('active');
+            document.getElementById('spawn-btn').style.display = 'none';
+            document.getElementById('instructions').innerText = "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom";
+            
+            clearCustomObjects();
+            window.roomGroup.visible = false; 
+            
+            window.camera.position.set(10, 10, 15);
+            orbitControls.enabled = true;
+            orbitControls.target.set(0, 0, 0);
+            orbitControls.update();
+            pointerLockControls.unlock();
+
+            try {
+                eval(voxelObjects[objIndex].code);
+            } catch(e) {
+                console.error("Erro ao carregar o objeto 3D:", e);
+                alert("Este objeto gerou um código com erro.");
+            }
+        }
+
+        function enterRoom() {
+            currentMode = 'room';
+            showPanel(null);
+            document.getElementById('hud').classList.add('active');
+            document.getElementById('crosshair').classList.add('active');
+            document.getElementById('spawn-btn').style.display = 'block';
+            
+            clearCustomObjects();
+            window.roomGroup.visible = true; 
+            
+            orbitControls.enabled = false;
+            pointerLockControls.getObject().position.set(0, 5, 10);
+            
+            pointerLockControls.lock();
+        }
+
+        function exitToMenu() {
+            currentMode = 'menu';
+            pointerLockControls.unlock();
+            orbitControls.enabled = false;
+            document.getElementById('hud').classList.remove('active');
+            document.getElementById('crosshair').classList.remove('active');
+            showPanel('panel-menu');
+        }
+
+        window.pendingSpawnCode = null;
+        window.spawnTargetPosition = null;
+
+        function openSpawnMenu() {
+            pointerLockControls.unlock();
+            const listDiv = document.getElementById('spawn-list');
+            listDiv.innerHTML = '';
+            
+            if(voxelObjects.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center;">Nenhum objeto criado. Crie um no Menu Principal primeiro.</p>';
+            } else {
+                voxelObjects.forEach((obj, index) => {
+                    const btn = document.createElement('button');
+                    btn.innerText = obj.name;
+                    btn.style.width = '100%';
+                    btn.style.marginBottom = '8px';
+                    btn.onclick = () => {
+                        window.pendingSpawnCode = obj.code;
+                        document.getElementById('panel-spawn').style.display = 'none';
+                        pointerLockControls.lock();
+                    };
+                    listDiv.appendChild(btn);
+                });
+            }
+            
+            document.getElementById('panel-spawn').style.display = 'flex';
+        }
+
+        function closeSpawnMenu() {
+            document.getElementById('panel-spawn').style.display = 'none';
+            if(currentMode === 'room') pointerLockControls.lock();
+        }
+
+        const raycaster = new THREE.Raycaster();
+        const centerPointer = new THREE.Vector2(0, 0); 
+
+        document.addEventListener('pointerdown', (event) => {
+            if (currentMode === 'room' && window.pendingSpawnCode && pointerLockControls.isLocked) {
+                raycaster.setFromCamera(centerPointer, window.camera);
+                const intersects = raycaster.intersectObjects([window.roomGroup], true); 
+                
+                if (intersects.length > 0) {
+                    window.spawnTargetPosition = intersects[0].point;
+                    try {
+                        eval(window.pendingSpawnCode);
+                    } catch(e) { 
+                        console.error("Erro ao spawnar:", e); 
+                    }
+                    
+                    window.spawnTargetPosition = null;
+                    window.pendingSpawnCode = null;
+                    document.getElementById('instructions').innerText = "Mouse: Olhar | WASD: Mover | Q/E: Descer/Subir | ESC: Pausar/Menu";
+                }
+            }
+        });
+
+        const gl = window.renderer.getContext();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = ( time - prevTime ) / 1000;
+            
+            if(currentMode === 'room' && pointerLockControls.isLocked) {
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= velocity.y * 10.0 * delta;
+
+                direction.z = Number( moveForward ) - Number( moveBackward );
+                direction.x = Number( moveRight ) - Number( moveLeft );
+                direction.y = Number( moveDown ) - Number( moveUp );
+                direction.normalize();
+
+                if ( moveForward || moveBackward ) velocity.z -= direction.z * 100.0 * delta;
+                if ( moveLeft || moveRight ) velocity.x -= direction.x * 100.0 * delta;
+                if ( moveUp || moveDown ) velocity.y -= direction.y * 100.0 * delta;
+
+                pointerLockControls.moveRight( - velocity.x * delta );
+                pointerLockControls.moveForward( - velocity.z * delta );
+                pointerLockControls.getObject().position.y -= velocity.y * delta;
+                
+                const limit = roomSize / 2 - 1.5;
+                const pos = pointerLockControls.getObject().position;
+                if (pos.x > limit) pos.x = limit;
+                if (pos.x < -limit) pos.x = -limit;
+                if (pos.z > limit) pos.z = limit;
+                if (pos.z < -limit) pos.z = -limit;
+                if (pos.y < 1) pos.y = 1; 
+                if (pos.y > 20) pos.y = 20; 
+            }
+            
+            if(currentMode === 'simple') {
+                orbitControls.update();
+            }
+
+            prevTime = time;
+
+            window.renderer.render(window.scene, window.camera);
+            gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            
+            let asciiStr = "";
+            for (let y = rows - 1; y >= 0; y--) {
+                for (let x = 0; x < cols; x++) {
+                    const index = (y * cols + x) * 4;
+                    const r = pixels[index];
+                    const g = pixels[index + 1];
+                    const b = pixels[index + 2];
+                    
+                    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                    const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
+                    asciiStr += ramp[charIndex];
+                }
+                asciiStr += "\n";
+            }
+            
+            asciiContainer.textContent = asciiStr;
+        }
+
+        showPanel('panel-menu');
+        animate();
+
+    </script>
+</body>
+</html>
