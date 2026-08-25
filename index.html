@@ -208,6 +208,7 @@
                 <button id="save-scene-btn" style="display: none;" onclick="saveScene()" data-i18n="btnSave">Salvar</button>
                 <button id="export-game-btn" style="display: none;" onclick="openExportMenu()" data-i18n="btnExport">Exportar Jogo</button>
                 <button id="res-btn-hud" onclick="cycleResolution()">Resolução: Normal (V)</button>
+                <button id="render-btn-hud" onclick="cycleRenderMode()">Modo: ASCII (M)</button>
             </div>
             <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
         </div>
@@ -229,7 +230,10 @@
                 <button onclick="triggerSceneImport('free_fpv')" style="flex: 1; background: #663399; border-color: #aa77ff; color: #aa77ff;" data-i18n="btnLoadFree">Carregar (Free)</button>
             </div>
 
-            <button id="res-btn-menu" onclick="cycleResolution()" style="margin-bottom: 15px; background: #444; border-color: #888; color: #fff;">Resolução: Normal (V)</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button id="res-btn-menu" onclick="cycleResolution()" style="flex: 1; background: #444; border-color: #888; color: #fff;">Resolução: Normal (V)</button>
+                <button id="render-btn-menu" onclick="cycleRenderMode()" style="flex: 1; background: #444; border-color: #888; color: #fff;">Modo: ASCII (M)</button>
+            </div>
 
             <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;" data-i18n="btnApi">Configurar API Key (Gemini)</button>
         </div>
@@ -281,7 +285,7 @@
             <p data-i18n="exportNameLabel">Título do Jogo:</p>
             <input type="text" id="export-title-input" placeholder="Meu Jogo Incrível" value="ASCII 3D Game">
             <p data-i18n="exportInstLabel" style="margin-top: 10px;">Instruções:</p>
-            <input type="text" id="export-inst-input" placeholder="WASD para mover..." value="WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution">
+            <input type="text" id="export-inst-input" placeholder="WASD para mover..." value="WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render">
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button onclick="confirmExportGame()" style="flex: 2;" data-i18n="btnConfirmExport">Baixar HTML</button>
                 <button onclick="closeExportMenu()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
@@ -317,10 +321,10 @@
                 btnSpawn: "Spawnar",
                 btnSave: "Salvar",
                 btnExport: "Exportar Jogo",
-                txtInstRoom: "[MODO CRIADOR] WASD/Mouse: Mover | Q/E: Altura | C: Clonar | X: Del | R: Girar | 0/1: Tamanho | PgUp/Dn: Y-Axis | V: Res | F: Piso | L: Luz | ESC: Menu",
-                txtInstFree: "[FREE FPV] WASD/Mouse: Mover | Q/E: Vertical | Duplo Clique: Ocultar HUD | V: Resolução | ESC: Menu",
+                txtInstRoom: "[MODO CRIADOR] WASD/Mouse: Mover | Q/E: Altura | C: Clonar | X: Del | R: Girar | 0/1: Tamanho | PgUp/Dn: Y-Axis | V: Res | M: Modo | F: Piso | L: Luz | ESC: Menu",
+                txtInstFree: "[FREE FPV] WASD/Mouse: Mover | Q/E: Vertical | Duplo Clique: Ocultar HUD | V: Resolução | M: Modo | ESC: Menu",
                 txtInstSpawn: "[MODO SPAWN] Clique no chão/parede para colocar o objeto.",
-                txtInstSimple: "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom | V: Mudar Resolução",
+                txtInstSimple: "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom | V: Mudar Res | M: Modo",
                 resNormal: "Normal",
                 resAlta: "Alta",
                 resUltra: "Ultra",
@@ -344,10 +348,10 @@
                 btnSpawn: "Spawn",
                 btnSave: "Save",
                 btnExport: "Export Game",
-                txtInstRoom: "[CREATOR MODE] WASD/Mouse: Move | Q/E: Vert | C: Clone | X: Del | R: Rot | 0/1: Size | PgUp/Dn: Y-Axis | V: Res | F: Floor | L: Light | ESC: Menu",
-                txtInstFree: "[FREE FPV] WASD/Mouse: Move | Q/E: Vert | Dbl Click: Hide HUD | V: Res | ESC: Menu",
+                txtInstRoom: "[CREATOR MODE] WASD/Mouse: Move | Q/E: Vert | C: Clone | X: Del | R: Rot | 0/1: Size | PgUp/Dn: Y-Axis | V: Res | M: Mode | F: Floor | L: Light | ESC: Menu",
+                txtInstFree: "[FREE FPV] WASD/Mouse: Move | Q/E: Vert | Dbl Click: Hide HUD | V: Res | M: Mode | ESC: Menu",
                 txtInstSpawn: "[SPAWN MODE] Click on floor/wall to place the object.",
-                txtInstSimple: "Mouse: Click+Drag to rotate | Scroll to Zoom | V: Change Res",
+                txtInstSimple: "Mouse: Click+Drag to rotate | Scroll to Zoom | V: Change Res | M: Mode",
                 resNormal: "Normal",
                 resAlta: "High",
                 resUltra: "Ultra",
@@ -371,10 +375,10 @@
                 btnSpawn: "Spawnear",
                 btnSave: "Guardar",
                 btnExport: "Exportar Juego",
-                txtInstRoom: "[MODO CREADOR] WASD/Raton: Mover | Q/E: Vert | C: Clonar | X: Del | R: Rot | 0/1: Tamaño | PgUp/Dn: Eje-Y | V: Res | F: Piso | L: Luz | ESC: Menú",
-                txtInstFree: "[MODO LIBRE] WASD/Raton: Mover | Q/E: Vert | Doble Clic: Ocultar HUD | V: Res | ESC: Menú",
+                txtInstRoom: "[MODO CREADOR] WASD/Raton: Mover | Q/E: Vert | C: Clonar | X: Del | R: Rot | 0/1: Tamaño | PgUp/Dn: Eje-Y | V: Res | M: Modo | F: Piso | L: Luz | ESC: Menú",
+                txtInstFree: "[MODO LIBRE] WASD/Raton: Mover | Q/E: Vert | Doble Clic: Ocultar HUD | V: Res | M: Modo | ESC: Menú",
                 txtInstSpawn: "[MODO SPAWN] Clic en piso/pared para colocar objeto.",
-                txtInstSimple: "Ratón: Clic+Arrastrar rotar | Scroll Zoom | V: Cambiar Res",
+                txtInstSimple: "Ratón: Clic+Arrastrar rotar | Scroll Zoom | V: Cambiar Res | M: Modo",
                 resNormal: "Normal",
                 resAlta: "Alta",
                 resUltra: "Ultra",
@@ -398,10 +402,10 @@
                 btnSpawn: "スポーン",
                 btnSave: "保存",
                 btnExport: "ゲームを出力",
-                txtInstRoom: "[クリエイター] WASD/マウス:移動 | Q/E:上下 | C:複製 | X:削除 | R:回転 | 0/1:サイズ | PgUp/Dn:高さ | V:解像度 | F:床 | L:光 | ESC:メニュー",
-                txtInstFree: "[フリー FPV] WASD/マウス:移動 | Q/E:上下 | ダブルクリック:HUD隠す | V:解像度 | ESC:メニュー",
+                txtInstRoom: "[クリエイター] WASD/マウス:移動 | Q/E:上下 | C:複製 | X:削除 | R:回転 | 0/1:サイズ | PgUp/Dn:高さ | V:解像度 | M:モード | F:床 | L:光 | ESC:メニュー",
+                txtInstFree: "[フリー FPV] WASD/マウス:移動 | Q/E:上下 | ダブルクリック:HUD隠す | V:解像度 | M:モード | ESC:メニュー",
                 txtInstSpawn: "[スポーンモード] 床/壁をクリックして配置。",
-                txtInstSimple: "マウス: クリック+ドラッグで回転 | スクロールでズーム | V: 解像度変更",
+                txtInstSimple: "マウス: クリック+ドラッグで回転 | スクロールでズーム | V: 解像度変更 | M: モード",
                 resNormal: "ノーマル",
                 resAlta: "高",
                 resUltra: "最高",
@@ -423,6 +427,7 @@
                 }
             });
             setResolution(currentResLevel);
+            if (typeof cycleRenderMode === 'function') cycleRenderMode(true);
             updateHUDText();
         }
         
@@ -667,6 +672,15 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.camera = camera;
         const renderer = new THREE.WebGLRenderer({ preserveDrawingBuffer: true });
         window.renderer = renderer;
+        window.renderer.domElement.style.position = 'absolute';
+        window.renderer.domElement.style.top = '0';
+        window.renderer.domElement.style.left = '0';
+        window.renderer.domElement.style.width = '100%';
+        window.renderer.domElement.style.height = '100%';
+        window.renderer.domElement.style.zIndex = '0';
+        window.renderer.domElement.style.opacity = '0';
+        window.renderer.domElement.style.pointerEvents = 'none';
+        document.body.insertBefore(window.renderer.domElement, document.getElementById('ascii-container'));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -676,6 +690,43 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let charW = 6, charH = 10;
         let asciiScale = 1.0;
         let currentResLevel = 0;
+        let currentRenderMode = 0;
+        const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
+
+        function cycleRenderMode() {
+            currentRenderMode = (currentRenderMode + 1) % renderModes.length;
+            const canvas = window.renderer.domElement;
+            
+            if (currentRenderMode === 0) {
+                document.getElementById('ascii-container').style.display = 'block';
+                canvas.style.opacity = '0';
+                canvas.style.pointerEvents = 'none';
+                window.renderer.toneMapping = THREE.NoToneMapping;
+            } else {
+                document.getElementById('ascii-container').style.display = 'none';
+                canvas.style.opacity = '1';
+                canvas.style.pointerEvents = 'auto';
+                
+                if (currentRenderMode === 3) {
+                    window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    window.renderer.toneMappingExposure = 1.2;
+                } else {
+                    window.renderer.toneMapping = THREE.NoToneMapping;
+                    window.renderer.toneMappingExposure = 1.0;
+                }
+            }
+            
+            window.scene.overrideMaterial = null;
+            if (currentRenderMode === 2) {
+                window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            } else if (currentRenderMode === 4) {
+                window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
+            } else if (currentRenderMode === 5) {
+                window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
+            }
+            
+            setupAsciiGrid();
+        }
 
         function setResolution(level) {
             currentResLevel = level % 3;
@@ -699,6 +750,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         function setupAsciiGrid() {
+            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0) {
+                window.renderer.setSize(window.innerWidth, window.innerHeight);
+                window.camera.aspect = window.innerWidth / window.innerHeight;
+                window.camera.updateProjectionMatrix();
+                return;
+            }
             cols = Math.floor(window.innerWidth / charW);
             rows = Math.floor(window.innerHeight / charH);
             renderer.setSize(cols, rows);
@@ -762,6 +819,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyV') cycleResolution();
+            if (e.code === 'KeyM') cycleRenderMode();
             switch(e.code) {
                 case 'ArrowUp': case 'KeyW': moveF=true; break;
                 case 'ArrowLeft': case 'KeyA': moveL=true; break;
@@ -809,19 +867,21 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             prevTime = time;
 
             renderer.render(scene, camera);
-            gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            
-            let asciiLines = [];
-            for (let y = rows - 1; y >= 0; y--) {
-                let rowStr = "";
-                for (let x = 0; x < cols; x++) {
-                    const idx = (y * cols + x) * 4;
-                    const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
-                    rowStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+            if (currentRenderMode === 0) {
+                gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+                
+                let asciiLines = [];
+                for (let y = rows - 1; y >= 0; y--) {
+                    let rowStr = "";
+                    for (let x = 0; x < cols; x++) {
+                        const idx = (y * cols + x) * 4;
+                        const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
+                        rowStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+                    }
+                    asciiLines.push(rowStr);
                 }
-                asciiLines.push(rowStr);
+                asciiContainer.textContent = asciiLines.join('\\n');
             }
-            asciiContainer.textContent = asciiLines.join('\\n');
         }
         animate();
     <\/script>
@@ -1007,6 +1067,15 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         window.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         window.renderer = new THREE.WebGLRenderer({ preserveDrawingBuffer: true });
+        window.renderer.domElement.style.position = 'absolute';
+        window.renderer.domElement.style.top = '0';
+        window.renderer.domElement.style.left = '0';
+        window.renderer.domElement.style.width = '100%';
+        window.renderer.domElement.style.height = '100%';
+        window.renderer.domElement.style.zIndex = '0';
+        window.renderer.domElement.style.opacity = '0';
+        window.renderer.domElement.style.pointerEvents = 'none';
+        document.body.insertBefore(window.renderer.domElement, document.getElementById('ascii-container'));
         window.renderer.shadowMap.enabled = true;
         window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1018,6 +1087,52 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let charH = 10;
         let asciiScale = 1.0;
         let currentResLevel = 0;
+        let currentRenderMode = 0;
+        const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
+
+        function cycleRenderMode(preserveMode = false) {
+            if (!preserveMode) {
+                currentRenderMode = (currentRenderMode + 1) % renderModes.length;
+            }
+            const btnMenu = document.getElementById('render-btn-menu');
+            const btnHud = document.getElementById('render-btn-hud');
+            
+            const prefix = currentLang === 'en' ? 'Mode' : currentLang === 'es' ? 'Modo' : currentLang === 'ja' ? 'モード' : 'Modo';
+            if (btnMenu) btnMenu.innerText = `${prefix}: ${renderModes[currentRenderMode]} (M)`;
+            if (btnHud) btnHud.innerText = `${prefix}: ${renderModes[currentRenderMode]} (M)`;
+            
+            const canvas = window.renderer.domElement;
+            
+            if (currentRenderMode === 0) {
+                document.getElementById('ascii-container').style.display = 'block';
+                canvas.style.opacity = '0';
+                canvas.style.pointerEvents = 'none';
+                window.renderer.toneMapping = THREE.NoToneMapping;
+            } else {
+                document.getElementById('ascii-container').style.display = 'none';
+                canvas.style.opacity = '1';
+                canvas.style.pointerEvents = 'auto';
+                
+                if (currentRenderMode === 3) {
+                    window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    window.renderer.toneMappingExposure = 1.2;
+                } else {
+                    window.renderer.toneMapping = THREE.NoToneMapping;
+                    window.renderer.toneMappingExposure = 1.0;
+                }
+            }
+            
+            window.scene.overrideMaterial = null;
+            if (currentRenderMode === 2) {
+                window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            } else if (currentRenderMode === 4) {
+                window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
+            } else if (currentRenderMode === 5) {
+                window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
+            }
+            
+            setupAsciiGrid();
+        }
 
         function setResolution(level) {
             currentResLevel = level;
@@ -1050,6 +1165,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         function setupAsciiGrid() {
+            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0) {
+                window.renderer.setSize(window.innerWidth, window.innerHeight);
+                window.camera.aspect = window.innerWidth / window.innerHeight;
+                window.camera.updateProjectionMatrix();
+                return;
+            }
             cols = Math.floor(window.innerWidth / charW);
             rows = Math.floor(window.innerHeight / charH);
             window.renderer.setSize(cols, rows);
@@ -1134,6 +1255,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         document.addEventListener('keydown', (event) => {
             if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
             if (event.code === 'KeyV') cycleResolution();
+            if (event.code === 'KeyM') cycleRenderMode();
             
             if(currentMode !== 'room' && currentMode !== 'free_fpv') return;
             switch (event.code) {
@@ -1429,25 +1551,27 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             prevTime = time;
 
             window.renderer.render(window.scene, window.camera);
-            gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-            
-            let asciiLines = [];
-            for (let y = rows - 1; y >= 0; y--) {
-                let rowStr = "";
-                for (let x = 0; x < cols; x++) {
-                    const index = (y * cols + x) * 4;
-                    const r = pixels[index];
-                    const g = pixels[index + 1];
-                    const b = pixels[index + 2];
-                    
-                    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
-                    rowStr += ramp[charIndex];
+            if (currentRenderMode === 0) {
+                gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+                
+                let asciiLines = [];
+                for (let y = rows - 1; y >= 0; y--) {
+                    let rowStr = "";
+                    for (let x = 0; x < cols; x++) {
+                        const index = (y * cols + x) * 4;
+                        const r = pixels[index];
+                        const g = pixels[index + 1];
+                        const b = pixels[index + 2];
+                        
+                        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                        const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
+                        rowStr += ramp[charIndex];
+                    }
+                    asciiLines.push(rowStr);
                 }
-                asciiLines.push(rowStr);
+                
+                asciiContainer.textContent = asciiLines.join('\n');
             }
-            
-            asciiContainer.textContent = asciiLines.join('\n');
         }
 
         setLanguage('pt');
