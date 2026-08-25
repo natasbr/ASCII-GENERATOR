@@ -191,9 +191,9 @@
     <div id="ui-layer">
         
         <div id="hud" class="hud">
-            <button onclick="exitToMenu()">🔙 Voltar ao Menu</button>
-            <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()">➕ Spawnar Objeto</button>
-            <button id="save-scene-btn" style="display: none;" onclick="saveScene()">💾 Salvar Cena</button>
+            <button onclick="exitToMenu()">Voltar ao Menu</button>
+            <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()">Spawnar Objeto</button>
+            <button id="save-scene-btn" style="display: none;" onclick="saveScene()">Salvar Cena</button>
             <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
         </div>
 
@@ -201,16 +201,16 @@
             <h1>GERADOR VOXEL ASCII 3D</h1>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button onclick="showPanel('panel-create')" style="flex: 2;">✨ Criar Novo</button>
-                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">📥 Importar Objeto</button>
+                <button onclick="showPanel('panel-create')" style="flex: 2;">Criar Novo</button>
+                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">Importar Objeto</button>
             </div>
             
-            <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;">📦 Meus Objetos</button>
+            <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;">Meus Objetos</button>
 
-            <button onclick="enterRoom()" style="margin-bottom: 15px;">🚪 Entrar no Quarto 3D (Modo FPS)</button>
-            <button onclick="triggerSceneImport()" style="margin-bottom: 15px; background: #663399; border-color: #aa77ff; color: #aa77ff;">📂 Carregar Cena (Free Mode)</button>
+            <button onclick="enterRoom()" style="margin-bottom: 15px;">Entrar no Quarto 3D (Modo FPS)</button>
+            <button onclick="triggerSceneImport()" style="margin-bottom: 15px; background: #663399; border-color: #aa77ff; color: #aa77ff;">Carregar Cena (Free Mode)</button>
 
-            <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;">🔑 Configurar API Key (Gemini)</button>
+            <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;">Configurar API Key (Gemini)</button>
         </div>
 
         <div id="panel-objects" class="panel">
@@ -240,7 +240,9 @@
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                 <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             </select>
-            <p>Descreva o objeto que deseja gerar em Voxel 3D:</p>
+            <p style="margin-top: 10px;">Arquivo Base (Opcional - modificar objeto existente):</p>
+            <input type="file" id="base-file-input" accept=".js,.json,application/javascript,application/json" style="margin-bottom: 10px; padding: 5px; cursor: pointer; border: 1px dashed #0f0; background: #001100;">
+            <p>Descreva o que deseja criar/modificar no objeto:</p>
             <input type="text" id="prompt-input" placeholder="Ex: Uma espada mágica brilhante...">
             <button id="generate-btn" onclick="generateObject()" style="margin-top: 10px;">Gerar e Visualizar</button>
             <div id="loading-msg" style="display:none; text-align:center; margin: 10px 0;">[ GERANDO VIA IA... POR FAVOR AGUARDE ]</div>
@@ -465,7 +467,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             document.getElementById('crosshair').classList.add('active');
             document.getElementById('spawn-btn').style.display = 'none';
             document.getElementById('save-scene-btn').style.display = 'none';
-            document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | ESC: Menu";
+            document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | Duplo Clique: Ocultar HUD | ESC: Menu";
 
             clearCustomObjects();
             window.roomGroup.visible = true; 
@@ -510,14 +512,37 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if(!prompt) return;
             
             const model = document.getElementById('model-select').value;
+            const baseFileInput = document.getElementById('base-file-input');
+            let baseCodeContext = "";
+
+            if (baseFileInput.files.length > 0) {
+                const file = baseFileInput.files[0];
+                const content = await file.text();
+                try {
+                    if (file.name.toLowerCase().endsWith('.json')) {
+                        const parsed = JSON.parse(content);
+                        baseCodeContext = parsed.code || content;
+                    } else {
+                        baseCodeContext = content;
+                    }
+                } catch(e) {
+                    baseCodeContext = content;
+                }
+            }
 
             document.getElementById('generate-btn').disabled = true;
             document.getElementById('loading-msg').style.display = 'block';
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                
+                let userText = `Crie este objeto: ${prompt}`;
+                if (baseCodeContext) {
+                    userText = `Modifique e recrie este objeto base de acordo com este novo pedido: "${prompt}".\n\nAqui está o código fonte atual do objeto base:\n\n${baseCodeContext}`;
+                }
+
                 const requestBody = {
-                    contents: [{ parts: [{ text: `Crie este objeto: ${prompt}` }] }],
+                    contents: [{ parts: [{ text: userText }] }],
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 };
 
@@ -549,6 +574,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
                 
                 document.getElementById('prompt-input').value = "";
+                document.getElementById('base-file-input').value = "";
                 
                 enterSimpleView(0);
                 
@@ -674,7 +700,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
             
             if (currentMode === 'room' && pointerLockControls.isLocked) {
-                if (['KeyC', 'KeyX', 'Delete', 'KeyR', 'Digit0', 'Digit1', 'Numpad0', 'Numpad1'].includes(event.code)) {
+                if (['KeyC', 'KeyX', 'Delete', 'KeyR', 'Digit0', 'Digit1', 'Numpad0', 'Numpad1', 'PageUp', 'PageDown'].includes(event.code)) {
                     raycaster.setFromCamera(centerPointer, window.camera);
                     const intersects = raycaster.intersectObjects(currentCustomObjects, true);
                     if (intersects.length > 0) {
@@ -722,6 +748,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                         z: rootObj.scale.z
                                     };
                                 }
+                            } else if (['PageUp', 'PageDown'].includes(event.code)) {
+                                const moveSpeed = 0.5;
+                                rootObj.position.y += (event.code === 'PageUp') ? moveSpeed : -moveSpeed;
+                                
+                                if (sceneItemIndex !== -1) {
+                                    currentSceneData[sceneItemIndex].position = {
+                                        x: rootObj.position.x,
+                                        y: rootObj.position.y,
+                                        z: rootObj.position.z
+                                    };
+                                }
                             }
                         }
                     }
@@ -747,13 +784,20 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         });
         
+        document.addEventListener('dblclick', () => {
+            if(currentMode === 'free_fpv' && pointerLockControls.isLocked) {
+                document.getElementById('hud').classList.toggle('active');
+                document.getElementById('crosshair').classList.toggle('active');
+            }
+        });
+
         pointerLockControls.addEventListener('lock', () => {
             if(window.pendingSpawnCode) {
                 document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o objeto.";
             } else if (currentMode === 'free_fpv') {
-                document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | ESC: Menu";
+                document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | Duplo Clique: Ocultar HUD | ESC: Menu";
             } else {
-                document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | ESC: Menu";
+                document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | PgUp/PgDn: Altura | ESC: Menu";
             }
         });
 
@@ -887,7 +931,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     window.currentSpawnId = null;
                     window.pendingSpawnCode = null;
                     
-                    document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | ESC: Menu";
+                    document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | PgUp/PgDn: Altura | ESC: Menu";
                 }
             }
         });
