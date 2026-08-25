@@ -190,32 +190,46 @@
 
     <div id="ui-layer">
         
+        <div style="position: absolute; top: 20px; right: 20px; z-index: 100; pointer-events: auto;">
+            <select id="lang-select" onchange="setLanguage(this.value)" style="padding: 5px; background: #000; color: #0f0; border: 1px solid #0f0; outline: none; font-family: inherit; font-weight: bold; cursor: pointer;">
+                <option value="pt">🇧🇷 PT</option>
+                <option value="en">🇺🇸 EN</option>
+                <option value="es">🇪🇸 ES</option>
+                <option value="ja">🇯🇵 JA</option>
+            </select>
+        </div>
+
         <div id="hud" class="hud">
             <div style="display: flex; gap: 5px;">
-                <button onclick="exitToMenu()">Voltar</button>
-                <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()">Spawnar</button>
-                <button id="save-scene-btn" style="display: none;" onclick="saveScene()">Salvar</button>
+                <button onclick="exitToMenu()" data-i18n="btnBack">Voltar</button>
+                <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()" data-i18n="btnSpawn">Spawnar</button>
+                <button id="save-scene-btn" style="display: none;" onclick="saveScene()" data-i18n="btnSave">Salvar</button>
+                <button id="export-game-btn" style="display: none;" onclick="exportHtmlGame()" data-i18n="btnExport">Exportar Jogo</button>
                 <button id="res-btn-hud" onclick="cycleResolution()">Resolução: Normal (V)</button>
             </div>
             <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
         </div>
 
         <div id="panel-menu" class="panel active">
-            <h1>GERADOR VOXEL ASCII 3D</h1>
+            <h1 data-i18n="title">GERADOR VOXEL ASCII 3D</h1>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button onclick="showPanel('panel-create')" style="flex: 2;">Criar Novo</button>
-                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">Importar Objeto</button>
+                <button onclick="showPanel('panel-create')" style="flex: 2;" data-i18n="btnCreate">Criar Novo</button>
+                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;" data-i18n="btnImport">Importar Objeto</button>
             </div>
             
-            <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;">Meus Objetos</button>
+            <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;" data-i18n="btnMyObjs">Meus Objetos</button>
 
-            <button onclick="enterRoom()" style="margin-bottom: 15px;">Entrar no Quarto 3D (Modo FPS)</button>
-            <button onclick="triggerSceneImport()" style="margin-bottom: 15px; background: #663399; border-color: #aa77ff; color: #aa77ff;">Carregar Cena (Free Mode)</button>
+            <button onclick="enterRoom()" style="margin-bottom: 15px;" data-i18n="btnCreator">Entrar (Modo Criador)</button>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="triggerSceneImport('room')" style="flex: 1; background: #996633; border-color: #ffaa33; color: #ffaa33;" data-i18n="btnLoadEdit">Editar Cena</button>
+                <button onclick="triggerSceneImport('free_fpv')" style="flex: 1; background: #663399; border-color: #aa77ff; color: #aa77ff;" data-i18n="btnLoadFree">Carregar (Free)</button>
+            </div>
 
             <button id="res-btn-menu" onclick="cycleResolution()" style="margin-bottom: 15px; background: #444; border-color: #888; color: #fff;">Resolução: Normal (V)</button>
 
-            <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;">Configurar API Key (Gemini)</button>
+            <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;" data-i18n="btnApi">Configurar API Key (Gemini)</button>
         </div>
 
         <div id="panel-objects" class="panel">
@@ -273,6 +287,129 @@
         let voxelObjects = JSON.parse(localStorage.getItem('voxel_objects')) || [];
         let currentMode = 'menu'; 
         let currentSceneData = [];
+        let currentLang = 'pt';
+        
+        const i18n = {
+            pt: {
+                title: "GERADOR VOXEL ASCII 3D",
+                btnCreate: "Criar Novo",
+                btnImport: "Importar Objeto",
+                btnMyObjs: "Meus Objetos",
+                btnCreator: "Entrar (Modo Criador)",
+                btnLoadEdit: "Editar Cena",
+                btnLoadFree: "Carregar (Free)",
+                btnApi: "Configurar API Key (Gemini)",
+                btnBack: "Voltar",
+                btnSpawn: "Spawnar",
+                btnSave: "Salvar",
+                btnExport: "Exportar Jogo",
+                txtInstRoom: "[MODO CRIADOR] WASD/Mouse: Mover | Q/E: Altura | C: Clonar | X: Del | R: Girar | 0/1: Tamanho | PgUp/Dn: Y-Axis | V: Res | F: Piso | L: Luz | ESC: Menu",
+                txtInstFree: "[FREE FPV] WASD/Mouse: Mover | Q/E: Vertical | Duplo Clique: Ocultar HUD | V: Resolução | ESC: Menu",
+                txtInstSpawn: "[MODO SPAWN] Clique no chão/parede para colocar o objeto.",
+                txtInstSimple: "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom | V: Mudar Resolução",
+                resNormal: "Normal",
+                resAlta: "Alta",
+                resUltra: "Ultra",
+                txtUnlock: "Clique na tela para retomar o controle."
+            },
+            en: {
+                title: "3D ASCII VOXEL GENERATOR",
+                btnCreate: "Create New",
+                btnImport: "Import Object",
+                btnMyObjs: "My Objects",
+                btnCreator: "Enter (Creator Mode)",
+                btnLoadEdit: "Edit Scene",
+                btnLoadFree: "Load (Free)",
+                btnApi: "Setup API Key (Gemini)",
+                btnBack: "Back",
+                btnSpawn: "Spawn",
+                btnSave: "Save",
+                btnExport: "Export Game",
+                txtInstRoom: "[CREATOR MODE] WASD/Mouse: Move | Q/E: Vert | C: Clone | X: Del | R: Rot | 0/1: Size | PgUp/Dn: Y-Axis | V: Res | F: Floor | L: Light | ESC: Menu",
+                txtInstFree: "[FREE FPV] WASD/Mouse: Move | Q/E: Vert | Dbl Click: Hide HUD | V: Res | ESC: Menu",
+                txtInstSpawn: "[SPAWN MODE] Click on floor/wall to place the object.",
+                txtInstSimple: "Mouse: Click+Drag to rotate | Scroll to Zoom | V: Change Res",
+                resNormal: "Normal",
+                resAlta: "High",
+                resUltra: "Ultra",
+                txtUnlock: "Click screen to resume control."
+            },
+            es: {
+                title: "GENERADOR VOXEL ASCII 3D",
+                btnCreate: "Crear Nuevo",
+                btnImport: "Importar Objeto",
+                btnMyObjs: "Mis Objetos",
+                btnCreator: "Entrar (Modo Creador)",
+                btnLoadEdit: "Editar Escena",
+                btnLoadFree: "Cargar (Libre)",
+                btnApi: "Configurar API Key (Gemini)",
+                btnBack: "Volver",
+                btnSpawn: "Spawnear",
+                btnSave: "Guardar",
+                btnExport: "Exportar Juego",
+                txtInstRoom: "[MODO CREADOR] WASD/Raton: Mover | Q/E: Vert | C: Clonar | X: Del | R: Rot | 0/1: Tamaño | PgUp/Dn: Eje-Y | V: Res | F: Piso | L: Luz | ESC: Menú",
+                txtInstFree: "[MODO LIBRE] WASD/Raton: Mover | Q/E: Vert | Doble Clic: Ocultar HUD | V: Res | ESC: Menú",
+                txtInstSpawn: "[MODO SPAWN] Clic en piso/pared para colocar objeto.",
+                txtInstSimple: "Ratón: Clic+Arrastrar rotar | Scroll Zoom | V: Cambiar Res",
+                resNormal: "Normal",
+                resAlta: "Alta",
+                resUltra: "Ultra",
+                txtUnlock: "Haz clic en la pantalla para retomar control."
+            },
+            ja: {
+                title: "3D ASCII ボクセル ジェネレーター",
+                btnCreate: "新規作成",
+                btnImport: "インポート",
+                btnMyObjs: "マイオブジェクト",
+                btnCreator: "入る (クリエイターモード)",
+                btnLoadEdit: "シーン編集",
+                btnLoadFree: "読み込む (フリー)",
+                btnApi: "APIキー設定 (Gemini)",
+                btnBack: "戻る",
+                btnSpawn: "スポーン",
+                btnSave: "保存",
+                btnExport: "ゲームを出力",
+                txtInstRoom: "[クリエイター] WASD/マウス:移動 | Q/E:上下 | C:複製 | X:削除 | R:回転 | 0/1:サイズ | PgUp/Dn:高さ | V:解像度 | F:床 | L:光 | ESC:メニュー",
+                txtInstFree: "[フリー FPV] WASD/マウス:移動 | Q/E:上下 | ダブルクリック:HUD隠す | V:解像度 | ESC:メニュー",
+                txtInstSpawn: "[スポーンモード] 床/壁をクリックして配置。",
+                txtInstSimple: "マウス: クリック+ドラッグで回転 | スクロールでズーム | V: 解像度変更",
+                resNormal: "ノーマル",
+                resAlta: "高",
+                resUltra: "最高",
+                txtUnlock: "画面をクリックして操作を再開します。"
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang] && i18n[lang][key]) {
+                    el.innerText = i18n[lang][key];
+                }
+            });
+            setResolution(currentResLevel);
+            updateHUDText();
+        }
+        
+        function updateHUDText() {
+            const inst = document.getElementById('instructions');
+            if (currentMode === 'room' || currentMode === 'free_fpv') {
+                if (!pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex') {
+                    inst.innerText = i18n[currentLang].txtUnlock;
+                    return;
+                }
+            }
+            if (window.pendingSpawnCode) {
+                inst.innerText = i18n[currentLang].txtInstSpawn;
+            } else if (currentMode === 'free_fpv') {
+                inst.innerText = i18n[currentLang].txtInstFree;
+            } else if (currentMode === 'room') {
+                inst.innerText = i18n[currentLang].txtInstRoom;
+            } else if (currentMode === 'simple') {
+                inst.innerText = i18n[currentLang].txtInstSimple;
+            }
+        }
         
         const systemPrompt = `Você é um assistente que gera objetos 3D usando Three.js.
 O objeto será renderizado em um quarto 3D que mapeia luminosidade para ASCII.
@@ -425,7 +562,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         // ==========================================
         function saveScene() {
             if (currentSceneData.length === 0) {
-                alert("A cena está vazia! Spawne alguns objetos primeiro.");
+                alert("A cena está vazia! / Scene is empty!");
                 return;
             }
             const content = JSON.stringify(currentSceneData, null, 2);
@@ -440,7 +577,220 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             URL.revokeObjectURL(url);
         }
 
-        function triggerSceneImport() {
+        function exportHtmlGame() {
+            if (currentSceneData.length === 0) {
+                alert("A cena está vazia! / Scene is empty!"); return;
+            }
+            const sceneJson = JSON.stringify(currentSceneData);
+            const floorVis = floor.visible;
+            const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII 3D Game</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; color: #0f0; font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; user-select: none; }
+        #ascii-container { white-space: pre; line-height: 10px; font-size: 10px; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); cursor: pointer; pointer-events: auto; }
+        .box { border: 2px solid #0f0; padding: 20px; text-align: center; background: rgba(0,20,0,0.9); border-radius: 10px; box-shadow: 0 0 20px #0f0; }
+        h1 { margin-top: 0; text-shadow: 0 0 5px #0f0; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"><\/script>
+</head>
+<body>
+    <div id="ascii-container"></div>
+    <div id="overlay">
+        <div class="box">
+            <h1>PLAY GAME</h1>
+            <p>Click to start</p>
+            <p style="font-size: 12px; color: #aaa;">WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution</p>
+        </div>
+    </div>
+    <script>
+        const sceneData = ${sceneJson};
+        const scene = new THREE.Scene();
+        window.scene = scene;
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        window.camera = camera;
+        const renderer = new THREE.WebGLRenderer({ preserveDrawingBuffer: true });
+        window.renderer = renderer;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const asciiContainer = document.getElementById('ascii-container');
+        const ramp = " .',:;clodxkO0KXNWM@".split('');
+        let cols, rows, pixels;
+        let charW = 6, charH = 10;
+        let asciiScale = 1.0;
+        let currentResLevel = 0;
+
+        function setResolution(level) {
+            currentResLevel = level % 3;
+            if (currentResLevel === 0) asciiScale = 1.0;
+            else if (currentResLevel === 1) asciiScale = 0.75;
+            else if (currentResLevel === 2) asciiScale = 0.5;
+            
+            charW = 6 * asciiScale;
+            charH = 10 * asciiScale;
+            
+            asciiContainer.style.transform = \`scale(\${asciiScale})\`;
+            asciiContainer.style.transformOrigin = 'top left';
+            asciiContainer.style.width = \`\${100 / asciiScale}%\`;
+            asciiContainer.style.height = \`\${100 / asciiScale}%\`;
+            
+            setupAsciiGrid();
+        }
+
+        function cycleResolution() {
+            setResolution(currentResLevel + 1);
+        }
+
+        function setupAsciiGrid() {
+            cols = Math.floor(window.innerWidth / charW);
+            rows = Math.floor(window.innerHeight / charH);
+            renderer.setSize(cols, rows);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            pixels = new Uint8Array(cols * rows * 4);
+        }
+        setupAsciiGrid();
+        window.addEventListener('resize', setupAsciiGrid);
+
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+        scene.add(ambientLight);
+        const centerLight = new THREE.PointLight(0xaabbff, 1.5, 80);
+        centerLight.position.set(0, 12, 0);
+        centerLight.castShadow = true;
+        centerLight.shadow.bias = -0.001;
+        scene.add(centerLight);
+        const ceilingLight = new THREE.PointLight(0xffddaa, 0.8, 60);
+        ceilingLight.position.set(0, 20, 0);
+        ceilingLight.castShadow = true;
+        scene.add(ceilingLight);
+
+        const matFloor = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(60, 1, 60), matFloor);
+        floor.position.y = -0.5;
+        floor.receiveShadow = true;
+        floor.visible = ${floorVis};
+        scene.add(floor);
+
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        controls.getObject().position.set(0, 5, 10);
+
+        sceneData.forEach(item => {
+            window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
+            window.spawnTargetScale = item.scale ? new THREE.Vector3(item.scale.x, item.scale.y, item.scale.z) : new THREE.Vector3(1, 1, 1);
+            window.spawnTargetRotation = item.rotation ? new THREE.Vector3(item.rotation.x, item.rotation.y, item.rotation.z) : new THREE.Vector3(0, 0, 0);
+
+            const originalAdd = window.scene.add.bind(window.scene);
+            window.scene.add = function(...objects) {
+                objects.forEach(obj => {
+                    if (window.spawnTargetPosition && (obj.isGroup || obj.isMesh)) {
+                        obj.position.copy(window.spawnTargetPosition);
+                        obj.scale.copy(window.spawnTargetScale);
+                        obj.rotation.set(window.spawnTargetRotation.x, window.spawnTargetRotation.y, window.spawnTargetRotation.z);
+                    }
+                });
+                originalAdd(...objects);
+            };
+
+            try { eval(item.code); } catch(e) { console.error(e); }
+            window.scene.add = originalAdd;
+        });
+        window.spawnTargetPosition = null;
+
+        const overlay = document.getElementById('overlay');
+        overlay.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => overlay.style.display = 'none');
+        controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+
+        let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyV') cycleResolution();
+            switch(e.code) {
+                case 'ArrowUp': case 'KeyW': moveF=true; break;
+                case 'ArrowLeft': case 'KeyA': moveL=true; break;
+                case 'ArrowDown': case 'KeyS': moveB=true; break;
+                case 'ArrowRight': case 'KeyD': moveR=true; break;
+                case 'KeyE': moveU=true; break;
+                case 'KeyQ': moveD=true; break;
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'ArrowUp': case 'KeyW': moveF=false; break;
+                case 'ArrowLeft': case 'KeyA': moveL=false; break;
+                case 'ArrowDown': case 'KeyS': moveB=false; break;
+                case 'ArrowRight': case 'KeyD': moveR=false; break;
+                case 'KeyE': moveU=false; break;
+                case 'KeyQ': moveD=false; break;
+            }
+        });
+
+        const velocity = new THREE.Vector3(), direction = new THREE.Vector3();
+        let prevTime = performance.now();
+        const gl = renderer.getContext();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            
+            if (controls.isLocked) {
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= velocity.y * 10.0 * delta;
+                direction.z = Number(moveF) - Number(moveB);
+                direction.x = Number(moveR) - Number(moveL);
+                direction.y = Number(moveD) - Number(moveU);
+                direction.normalize();
+                if(moveF || moveB) velocity.z -= direction.z * 100.0 * delta;
+                if(moveL || moveR) velocity.x -= direction.x * 100.0 * delta;
+                if(moveU || moveD) velocity.y -= direction.y * 100.0 * delta;
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                controls.getObject().position.y -= velocity.y * delta;
+            }
+            prevTime = time;
+
+            renderer.render(scene, camera);
+            gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            
+            let asciiStr = "";
+            for (let y = rows - 1; y >= 0; y--) {
+                for (let x = 0; x < cols; x++) {
+                    const idx = (y * cols + x) * 4;
+                    const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
+                    asciiStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+                }
+                asciiStr += "\\n";
+            }
+            asciiContainer.textContent = asciiStr;
+        }
+        animate();
+    <\/script>
+</body>
+</html>`;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "jogo_ascii_3d.html";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerSceneImport(mode = 'free_fpv') {
+            window.sceneImportMode = mode;
             document.getElementById('import-scene-file').click();
         }
 
@@ -453,33 +803,38 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 try {
                     const parsedData = JSON.parse(e.target.result);
                     if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
-                        loadSceneIntoFreeMode(parsedData);
+                        const targetMode = window.sceneImportMode || 'free_fpv';
+                        loadSceneIntoMode(parsedData, targetMode);
                     } else {
-                        alert("Arquivo de cena inválido. Certifique-se de que é uma cena salva deste gerador.");
+                        alert("Arquivo de cena inválido.");
                     }
                 } catch(err) {
-                    alert("Erro ao ler o arquivo de cena.");
+                    alert("Erro ao ler o arquivo.");
                 }
             };
             reader.readAsText(file);
             event.target.value = '';
         }
 
-        function loadSceneIntoFreeMode(sceneData) {
-            currentMode = 'free_fpv';
-            showPanel(null);
-            document.getElementById('hud').classList.add('active');
-            document.getElementById('crosshair').classList.add('active');
-            document.getElementById('spawn-btn').style.display = 'none';
-            document.getElementById('save-scene-btn').style.display = 'none';
-            document.getElementById('instructions').innerText = "[FREE FPV] WASD/Mouse: Mover | Q/E: Vertical | Duplo Clique: Ocultar HUD | V: Resolução | ESC: Menu";
+        function loadSceneIntoMode(sceneData, targetMode) {
+            if (targetMode === 'room') {
+                enterRoom();
+            } else {
+                currentMode = 'free_fpv';
+                showPanel(null);
+                document.getElementById('hud').classList.add('active');
+                document.getElementById('crosshair').classList.add('active');
+                document.getElementById('spawn-btn').style.display = 'none';
+                document.getElementById('save-scene-btn').style.display = 'none';
+                document.getElementById('export-game-btn').style.display = 'none';
 
-            clearCustomObjects();
-            window.roomGroup.visible = true; 
+                clearCustomObjects();
+                window.roomGroup.visible = true; 
 
-            orbitControls.enabled = false;
-            pointerLockControls.getObject().position.set(0, 10, 20);
-            pointerLockControls.lock();
+                orbitControls.enabled = false;
+                pointerLockControls.getObject().position.set(0, 10, 20);
+                pointerLockControls.lock();
+            }
 
             currentSceneData = sceneData;
 
@@ -619,10 +974,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const resBtnMenu = document.getElementById('res-btn-menu');
             const resBtnHud = document.getElementById('res-btn-hud');
             
-            let label = "Normal";
-            if (level === 0) { asciiScale = 1.0; label = "Normal"; }
-            else if (level === 1) { asciiScale = 0.75; label = "Alta"; }
-            else if (level === 2) { asciiScale = 0.5; label = "Ultra"; }
+            let label = i18n[currentLang].resNormal;
+            if (level === 0) { asciiScale = 1.0; label = i18n[currentLang].resNormal; }
+            else if (level === 1) { asciiScale = 0.75; label = i18n[currentLang].resAlta; }
+            else if (level === 2) { asciiScale = 0.5; label = i18n[currentLang].resUltra; }
             
             charW = 6 * asciiScale;
             charH = 10 * asciiScale;
@@ -632,8 +987,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             asciiContainer.style.width = `${100 / asciiScale}%`;
             asciiContainer.style.height = `${100 / asciiScale}%`;
             
-            if (resBtnMenu) resBtnMenu.innerText = `Resolução: ${label} (V)`;
-            if (resBtnHud) resBtnHud.innerText = `Resolução: ${label} (V)`;
+            const prefix = currentLang === 'en' ? 'Resolution' : currentLang === 'es' ? 'Resolución' : currentLang === 'ja' ? '解像度' : 'Resolução';
+            if (resBtnMenu) resBtnMenu.innerText = `${prefix}: ${label} (V)`;
+            if (resBtnHud) resBtnHud.innerText = `${prefix}: ${label} (V)`;
             
             setupAsciiGrid();
         }
@@ -763,7 +1119,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             } else if (event.code === 'KeyC') {
                                 if (sceneItemIndex !== -1) {
                                     window.pendingSpawnCode = currentSceneData[sceneItemIndex].code;
-                                    document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o CLONE.";
+                                    updateHUDText();
                                 }
                             } else if (event.code === 'KeyR') {
                                 rootObj.rotation.y += Math.PI / 2;
@@ -802,6 +1158,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                         }
                     }
                 }
+                
+                if (event.code === 'KeyF') {
+                    floor.visible = !floor.visible;
+                } else if (event.code === 'KeyL') {
+                    centerLight.position.copy(pointerLockControls.getObject().position);
+                }
             }
         });
         
@@ -831,19 +1193,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         });
 
         pointerLockControls.addEventListener('lock', () => {
-            if(window.pendingSpawnCode) {
-                document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o objeto.";
-            } else if (currentMode === 'free_fpv') {
-                document.getElementById('instructions').innerText = "[FREE FPV] WASD/Mouse: Mover | Q/E: Vertical | Duplo Clique: Ocultar HUD | V: Resolução | ESC: Menu";
-            } else {
-                document.getElementById('instructions').innerText = "[3D ROOM] WASD/Mouse: Mover | Q/E: Vertical | C: Clonar | X: Del | R: Girar | 0/1: Tamanho | PgUp/Dn: Altura | V: Res | ESC: Menu";
-            }
+            updateHUDText();
         });
 
         pointerLockControls.addEventListener('unlock', () => {
-            if((currentMode === 'room' || currentMode === 'free_fpv') && document.getElementById('panel-spawn').style.display !== 'flex') {
-                document.getElementById('instructions').innerText = "Clique na tela para retomar o controle do personagem.";
-            }
+            updateHUDText();
         });
 
         function enterSimpleView(objIndex) {
@@ -853,7 +1207,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             document.getElementById('crosshair').classList.remove('active');
             document.getElementById('spawn-btn').style.display = 'none';
             document.getElementById('save-scene-btn').style.display = 'none';
-            document.getElementById('instructions').innerText = "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom | V: Mudar Resolução";
+            document.getElementById('export-game-btn').style.display = 'none';
+            updateHUDText();
             
             clearCustomObjects();
             window.roomGroup.visible = false; 
@@ -879,6 +1234,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             document.getElementById('crosshair').classList.add('active');
             document.getElementById('spawn-btn').style.display = 'block';
             document.getElementById('save-scene-btn').style.display = 'block';
+            document.getElementById('export-game-btn').style.display = 'block';
+            updateHUDText();
             
             clearCustomObjects();
             window.roomGroup.visible = true; 
@@ -970,7 +1327,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     window.currentSpawnId = null;
                     window.pendingSpawnCode = null;
                     
-                    document.getElementById('instructions').innerText = "[3D ROOM] WASD/Mouse: Mover | Q/E: Vertical | C: Clonar | X: Del | R: Girar | 0/1: Tamanho | PgUp/Dn: Altura | V: Res | ESC: Menu";
+                    updateHUDText();
                 }
             }
         });
@@ -1040,6 +1397,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             asciiContainer.textContent = asciiStr;
         }
 
+        setLanguage('pt');
         showPanel('panel-menu');
         animate();
 
