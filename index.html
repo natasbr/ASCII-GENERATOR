@@ -193,6 +193,7 @@
         <div id="hud" class="hud">
             <button onclick="exitToMenu()">🔙 Voltar ao Menu</button>
             <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()">➕ Spawnar Objeto</button>
+            <button id="save-scene-btn" style="display: none;" onclick="saveScene()">💾 Salvar Cena</button>
             <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
         </div>
 
@@ -201,14 +202,21 @@
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button onclick="showPanel('panel-create')" style="flex: 2;">✨ Criar Novo</button>
-                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">📥 Importar</button>
+                <button onclick="triggerImport()" style="flex: 1; background: #003366; border-color: #00aaff; color: #00aaff;">📥 Importar Objeto</button>
             </div>
             
+            <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;">📦 Meus Objetos</button>
+
             <button onclick="enterRoom()" style="margin-bottom: 15px;">🚪 Entrar no Quarto 3D (Modo FPS)</button>
+            <button onclick="triggerSceneImport()" style="margin-bottom: 15px; background: #663399; border-color: #aa77ff; color: #aa77ff;">📂 Carregar Cena (Free Mode)</button>
+
             <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;">🔑 Configurar API Key (Gemini)</button>
-            
-            <h2 style="margin-top: 20px;">Meus Objetos</h2>
+        </div>
+
+        <div id="panel-objects" class="panel">
+            <h2>Meus Objetos</h2>
             <div id="objects-list" style="max-height: 200px; overflow-y: auto;"></div>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Voltar</button>
         </div>
 
         <div id="panel-api" class="panel">
@@ -247,8 +255,9 @@
 
     </div>
 
-    <!-- Hidden file input for importing -->
+    <!-- Hidden file inputs for importing -->
     <input type="file" id="import-file" style="display: none;" accept=".js,.json,application/javascript,application/json" onchange="handleImport(event)">
+    <input type="file" id="import-scene-file" style="display: none;" accept=".json,application/json" onchange="handleSceneImport(event)">
 
     <script>
         // ==========================================
@@ -256,6 +265,7 @@
         // ==========================================
         let voxelObjects = JSON.parse(localStorage.getItem('voxel_objects')) || [];
         let currentMode = 'menu'; 
+        let currentSceneData = [];
         
         const systemPrompt = `Você é um assistente que gera objetos 3D usando Three.js.
 O objeto será renderizado em um quarto 3D que mapeia luminosidade para ASCII.
@@ -276,7 +286,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if(panelId) {
                 document.getElementById(panelId).classList.add('active');
             }
-            if(panelId === 'panel-menu') {
+            if(panelId === 'panel-objects') {
                 renderObjectsList();
             }
         }
@@ -346,7 +356,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 try {
                     if (file.name.toLowerCase().endsWith('.json')) {
                         const parsedData = JSON.parse(content);
-                        if (Array.isArray(parsedData)) {
+                        if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
+                            alert("Isto parece ser uma Cena (vários objetos em posições), use o botão 'Carregar Cena' no menu principal.");
+                            return;
+                        } else if (Array.isArray(parsedData)) {
                             voxelObjects.unshift(...parsedData);
                         } else if (parsedData.name && parsedData.code) {
                             voxelObjects.unshift(parsedData);
@@ -360,7 +373,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     }
                     
                     localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
-                    renderObjectsList();
+                    if(document.getElementById('panel-objects').classList.contains('active')) {
+                        renderObjectsList();
+                    }
                     alert("Objeto importado com sucesso!");
                     
                 } catch(err) {
@@ -396,6 +411,88 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // ==========================================
+        // SCENE MANAGEMENT
+        // ==========================================
+        function saveScene() {
+            if (currentSceneData.length === 0) {
+                alert("A cena está vazia! Spawne alguns objetos primeiro.");
+                return;
+            }
+            const content = JSON.stringify(currentSceneData, null, 2);
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "minha_cena_voxel.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerSceneImport() {
+            document.getElementById('import-scene-file').click();
+        }
+
+        function handleSceneImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
+                        loadSceneIntoFreeMode(parsedData);
+                    } else {
+                        alert("Arquivo de cena inválido. Certifique-se de que é uma cena salva deste gerador.");
+                    }
+                } catch(err) {
+                    alert("Erro ao ler o arquivo de cena.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function loadSceneIntoFreeMode(sceneData) {
+            currentMode = 'free_fpv';
+            showPanel(null);
+            document.getElementById('hud').classList.add('active');
+            document.getElementById('crosshair').classList.add('active');
+            document.getElementById('spawn-btn').style.display = 'none';
+            document.getElementById('save-scene-btn').style.display = 'none';
+            document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | ESC: Menu";
+
+            clearCustomObjects();
+            window.roomGroup.visible = true; 
+
+            orbitControls.enabled = false;
+            pointerLockControls.getObject().position.set(0, 10, 20);
+            pointerLockControls.lock();
+
+            currentSceneData = sceneData;
+
+            sceneData.forEach(item => {
+                window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
+                window.spawnTargetScale = item.scale ? new THREE.Vector3(item.scale.x, item.scale.y, item.scale.z) : new THREE.Vector3(1, 1, 1);
+                window.spawnTargetRotation = item.rotation ? new THREE.Vector3(item.rotation.x, item.rotation.y, item.rotation.z) : new THREE.Vector3(0, 0, 0);
+                window.currentSpawnId = item.spawnId || (Date.now() + Math.random());
+                item.spawnId = window.currentSpawnId;
+                
+                try {
+                    eval(item.code);
+                } catch(e) {
+                    console.error("Erro ao carregar objeto da cena:", e);
+                }
+            });
+            window.spawnTargetPosition = null;
+            window.spawnTargetScale = null;
+            window.spawnTargetRotation = null;
+            window.currentSpawnId = null;
         }
 
         // ==========================================
@@ -526,9 +623,18 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 if (window.spawnTargetPosition) {
                     if (obj.isGroup || obj.isMesh) {
                         obj.position.copy(window.spawnTargetPosition);
+                        if (window.spawnTargetScale) {
+                            obj.scale.copy(window.spawnTargetScale);
+                        }
+                        if (window.spawnTargetRotation) {
+                            obj.rotation.set(window.spawnTargetRotation.x, window.spawnTargetRotation.y, window.spawnTargetRotation.z);
+                        }
                     }
                 }
                 if(obj !== ambientLight && obj !== centerLight && obj !== ceilingLight && obj !== window.roomGroup && obj !== pointerLockControls.getObject()) {
+                    if (window.currentSpawnId !== undefined && window.currentSpawnId !== null) {
+                        obj.userData.spawnId = window.currentSpawnId;
+                    }
                     currentCustomObjects.push(obj);
                 }
             });
@@ -538,6 +644,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         function clearCustomObjects() {
             currentCustomObjects.forEach(obj => window.scene.remove(obj));
             currentCustomObjects = [];
+            currentSceneData = [];
         }
 
         const orbitControls = new THREE.OrbitControls(window.camera, document.body);
@@ -556,7 +663,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let prevTime = performance.now();
 
         document.addEventListener('keydown', (event) => {
-            if(currentMode !== 'room') return;
+            if(currentMode !== 'room' && currentMode !== 'free_fpv') return;
             switch (event.code) {
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
@@ -565,10 +672,65 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 case 'KeyE': moveUp = true; break;
                 case 'KeyQ': moveDown = true; break;
             }
+            
+            if (currentMode === 'room' && pointerLockControls.isLocked) {
+                if (['KeyC', 'KeyX', 'Delete', 'KeyR', 'Digit0', 'Digit1', 'Numpad0', 'Numpad1'].includes(event.code)) {
+                    raycaster.setFromCamera(centerPointer, window.camera);
+                    const intersects = raycaster.intersectObjects(currentCustomObjects, true);
+                    if (intersects.length > 0) {
+                        let obj = intersects[0].object;
+                        let rootObj = null;
+                        while (obj) {
+                            if (currentCustomObjects.includes(obj)) {
+                                rootObj = obj;
+                                break;
+                            }
+                            obj = obj.parent;
+                        }
+                        
+                        if (rootObj && rootObj.userData.spawnId) {
+                            const sceneItemIndex = currentSceneData.findIndex(item => item.spawnId === rootObj.userData.spawnId);
+                            
+                            if (event.code === 'KeyX' || event.code === 'Delete') {
+                                window.scene.remove(rootObj);
+                                currentCustomObjects = currentCustomObjects.filter(o => o !== rootObj);
+                                if (sceneItemIndex !== -1) currentSceneData.splice(sceneItemIndex, 1);
+                            } else if (event.code === 'KeyC') {
+                                if (sceneItemIndex !== -1) {
+                                    window.pendingSpawnCode = currentSceneData[sceneItemIndex].code;
+                                    document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o CLONE.";
+                                }
+                            } else if (event.code === 'KeyR') {
+                                rootObj.rotation.y += Math.PI / 2;
+                                if (sceneItemIndex !== -1) {
+                                    currentSceneData[sceneItemIndex].rotation = {
+                                        x: rootObj.rotation.x,
+                                        y: rootObj.rotation.y,
+                                        z: rootObj.rotation.z
+                                    };
+                                }
+                            } else if (['Digit0', 'Numpad0', 'Digit1', 'Numpad1'].includes(event.code)) {
+                                const scaleSpeed = 0.15;
+                                const scaleDelta = (event.code === 'Digit1' || event.code === 'Numpad1') ? (1 + scaleSpeed) : (1 - scaleSpeed);
+                                
+                                rootObj.scale.multiplyScalar(scaleDelta);
+                                
+                                if (sceneItemIndex !== -1) {
+                                    currentSceneData[sceneItemIndex].scale = {
+                                        x: rootObj.scale.x,
+                                        y: rootObj.scale.y,
+                                        z: rootObj.scale.z
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
         
         document.addEventListener('keyup', (event) => {
-            if(currentMode !== 'room') return;
+            if(currentMode !== 'room' && currentMode !== 'free_fpv') return;
             switch (event.code) {
                 case 'ArrowUp': case 'KeyW': moveForward = false; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
@@ -580,7 +742,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         });
 
         document.addEventListener('click', () => {
-            if(currentMode === 'room' && !pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex') {
+            if((currentMode === 'room' || currentMode === 'free_fpv') && !pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex') {
                 pointerLockControls.lock();
             }
         });
@@ -588,13 +750,15 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         pointerLockControls.addEventListener('lock', () => {
             if(window.pendingSpawnCode) {
                 document.getElementById('instructions').innerText = "[MODO SPAWN] Clique no chão/parede para colocar o objeto.";
+            } else if (currentMode === 'free_fpv') {
+                document.getElementById('instructions').innerText = "[FREE FPV] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | ESC: Menu";
             } else {
-                document.getElementById('instructions').innerText = "Mouse: Olhar | WASD: Mover | Q/E: Descer/Subir | ESC: Pausar/Menu";
+                document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | ESC: Menu";
             }
         });
 
         pointerLockControls.addEventListener('unlock', () => {
-            if(currentMode === 'room' && document.getElementById('panel-spawn').style.display !== 'flex') {
+            if((currentMode === 'room' || currentMode === 'free_fpv') && document.getElementById('panel-spawn').style.display !== 'flex') {
                 document.getElementById('instructions').innerText = "Clique na tela para retomar o controle do personagem.";
             }
         });
@@ -605,6 +769,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             document.getElementById('hud').classList.add('active');
             document.getElementById('crosshair').classList.remove('active');
             document.getElementById('spawn-btn').style.display = 'none';
+            document.getElementById('save-scene-btn').style.display = 'none';
             document.getElementById('instructions').innerText = "Mouse: Clique+Arraste para rotacionar | Scroll para Zoom";
             
             clearCustomObjects();
@@ -630,6 +795,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             document.getElementById('hud').classList.add('active');
             document.getElementById('crosshair').classList.add('active');
             document.getElementById('spawn-btn').style.display = 'block';
+            document.getElementById('save-scene-btn').style.display = 'block';
             
             clearCustomObjects();
             window.roomGroup.visible = true; 
@@ -679,7 +845,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         function closeSpawnMenu() {
             document.getElementById('panel-spawn').style.display = 'none';
-            if(currentMode === 'room') pointerLockControls.lock();
+            if(currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
         }
 
         const raycaster = new THREE.Raycaster();
@@ -692,19 +858,40 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 
                 if (intersects.length > 0) {
                     window.spawnTargetPosition = intersects[0].point;
+                    window.spawnTargetScale = new THREE.Vector3(1, 1, 1);
+                    window.spawnTargetRotation = new THREE.Vector3(0, 0, 0);
+                    window.currentSpawnId = Date.now() + Math.random();
+                    let spawnedCode = window.pendingSpawnCode;
+
                     try {
-                        eval(window.pendingSpawnCode);
+                        eval(spawnedCode);
+                        
+                        currentSceneData.push({
+                            spawnId: window.currentSpawnId,
+                            code: spawnedCode,
+                            position: { 
+                                x: window.spawnTargetPosition.x, 
+                                y: window.spawnTargetPosition.y, 
+                                z: window.spawnTargetPosition.z 
+                            },
+                            scale: { x: 1, y: 1, z: 1 },
+                            rotation: { x: 0, y: 0, z: 0 }
+                        });
                     } catch(e) { 
                         console.error("Erro ao spawnar:", e); 
                     }
                     
                     window.spawnTargetPosition = null;
+                    window.spawnTargetScale = null;
+                    window.spawnTargetRotation = null;
+                    window.currentSpawnId = null;
                     window.pendingSpawnCode = null;
-                    document.getElementById('instructions').innerText = "Mouse: Olhar | WASD: Mover | Q/E: Descer/Subir | ESC: Pausar/Menu";
+                    
+                    document.getElementById('instructions').innerText = "[3D ROOM] Mouse: Olhar | WASD: Mover | Q/E: Subir/Descer | C: Clonar | X: Deletar | R: Rotacionar | 0/1: Tamanho | ESC: Menu";
                 }
             }
         });
-
+        
         const gl = window.renderer.getContext();
 
         function animate() {
@@ -713,7 +900,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const time = performance.now();
             const delta = ( time - prevTime ) / 1000;
             
-            if(currentMode === 'room' && pointerLockControls.isLocked) {
+            if((currentMode === 'room' || currentMode === 'free_fpv') && pointerLockControls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 velocity.y -= velocity.y * 10.0 * delta;
@@ -731,14 +918,16 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 pointerLockControls.moveForward( - velocity.z * delta );
                 pointerLockControls.getObject().position.y -= velocity.y * delta;
                 
-                const limit = roomSize / 2 - 1.5;
-                const pos = pointerLockControls.getObject().position;
-                if (pos.x > limit) pos.x = limit;
-                if (pos.x < -limit) pos.x = -limit;
-                if (pos.z > limit) pos.z = limit;
-                if (pos.z < -limit) pos.z = -limit;
-                if (pos.y < 1) pos.y = 1; 
-                if (pos.y > 20) pos.y = 20; 
+                if (currentMode === 'room') {
+                    const limit = roomSize / 2 - 1.5;
+                    const pos = pointerLockControls.getObject().position;
+                    if (pos.x > limit) pos.x = limit;
+                    if (pos.x < -limit) pos.x = -limit;
+                    if (pos.z > limit) pos.z = limit;
+                    if (pos.z < -limit) pos.z = -limit;
+                    if (pos.y < 1) pos.y = 1; 
+                    if (pos.y > 20) pos.y = 20; 
+                }
             }
             
             if(currentMode === 'simple') {
