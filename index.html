@@ -206,7 +206,7 @@
                 <button onclick="exitToMenu()" data-i18n="btnBack">Voltar</button>
                 <button id="spawn-btn" style="display: none;" onclick="openSpawnMenu()" data-i18n="btnSpawn">Spawnar</button>
                 <button id="save-scene-btn" style="display: none;" onclick="saveScene()" data-i18n="btnSave">Salvar</button>
-                <button id="export-game-btn" style="display: none;" onclick="exportHtmlGame()" data-i18n="btnExport">Exportar Jogo</button>
+                <button id="export-game-btn" style="display: none;" onclick="openExportMenu()" data-i18n="btnExport">Exportar Jogo</button>
                 <button id="res-btn-hud" onclick="cycleResolution()">Resolução: Normal (V)</button>
             </div>
             <div id="instructions" style="color:#0f0; font-size:12px; margin-top:5px;"></div>
@@ -276,6 +276,18 @@
             <button onclick="closeSpawnMenu()" style="color: #ff5555; border-color: #ff5555;">Cancelar</button>
         </div>
 
+        <div id="panel-export" class="panel">
+            <h2 data-i18n="exportMenuTitle">EXPORTAR JOGO</h2>
+            <p data-i18n="exportNameLabel">Título do Jogo:</p>
+            <input type="text" id="export-title-input" placeholder="Meu Jogo Incrível" value="ASCII 3D Game">
+            <p data-i18n="exportInstLabel" style="margin-top: 10px;">Instruções:</p>
+            <input type="text" id="export-inst-input" placeholder="WASD para mover..." value="WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="confirmExportGame()" style="flex: 2;" data-i18n="btnConfirmExport">Baixar HTML</button>
+                <button onclick="closeExportMenu()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
+            </div>
+        </div>
+
     </div>
 
     <!-- Hidden file inputs for importing -->
@@ -312,7 +324,12 @@
                 resNormal: "Normal",
                 resAlta: "Alta",
                 resUltra: "Ultra",
-                txtUnlock: "Clique na tela para retomar o controle."
+                txtUnlock: "Clique na tela para retomar o controle.",
+                exportMenuTitle: "EXPORTAR JOGO",
+                exportNameLabel: "Título do Jogo:",
+                exportInstLabel: "Instruções do Jogo:",
+                btnConfirmExport: "Baixar HTML",
+                btnCancel: "Cancelar"
             },
             en: {
                 title: "3D ASCII VOXEL GENERATOR",
@@ -334,7 +351,12 @@
                 resNormal: "Normal",
                 resAlta: "High",
                 resUltra: "Ultra",
-                txtUnlock: "Click screen to resume control."
+                txtUnlock: "Click screen to resume control.",
+                exportMenuTitle: "EXPORT GAME",
+                exportNameLabel: "Game Title:",
+                exportInstLabel: "Game Instructions:",
+                btnConfirmExport: "Download HTML",
+                btnCancel: "Cancel"
             },
             es: {
                 title: "GENERADOR VOXEL ASCII 3D",
@@ -356,7 +378,12 @@
                 resNormal: "Normal",
                 resAlta: "Alta",
                 resUltra: "Ultra",
-                txtUnlock: "Haz clic en la pantalla para retomar control."
+                txtUnlock: "Haz clic en la pantalla para retomar control.",
+                exportMenuTitle: "EXPORTAR JUEGO",
+                exportNameLabel: "Título del Juego:",
+                exportInstLabel: "Instrucciones del Juego:",
+                btnConfirmExport: "Descargar HTML",
+                btnCancel: "Cancelar"
             },
             ja: {
                 title: "3D ASCII ボクセル ジェネレーター",
@@ -378,7 +405,12 @@
                 resNormal: "ノーマル",
                 resAlta: "高",
                 resUltra: "最高",
-                txtUnlock: "画面をクリックして操作を再開します。"
+                txtUnlock: "画面をクリックして操作を再開します。",
+                exportMenuTitle: "ゲームを出力",
+                exportNameLabel: "ゲームのタイトル:",
+                exportInstLabel: "ゲームの説明:",
+                btnConfirmExport: "HTMLをダウンロード",
+                btnCancel: "キャンセル"
             }
         };
 
@@ -579,10 +611,24 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             URL.revokeObjectURL(url);
         }
 
-        function exportHtmlGame() {
+        function openExportMenu() {
             if (currentSceneData.length === 0) {
-                alert("A cena está vazia! / Scene is empty!"); return;
+                alert("A cena está vazia! / Scene is empty!");
+                return;
             }
+            pointerLockControls.unlock();
+            showPanel('panel-export');
+        }
+
+        function closeExportMenu() {
+            showPanel(null);
+            if(currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
+        }
+
+        function confirmExportGame() {
+            const title = document.getElementById('export-title-input').value.trim() || 'ASCII 3D Game';
+            const inst = document.getElementById('export-inst-input').value.trim() || 'WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution';
+            
             const sceneJson = JSON.stringify(currentSceneData);
             const floorVis = floor.visible;
             const htmlContent = `<!DOCTYPE html>
@@ -590,7 +636,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII 3D Game</title>
+    <title>${title}</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; color: #0f0; font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; user-select: none; }
         #ascii-container { white-space: pre; line-height: 10px; font-size: 10px; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden; letter-spacing: 0; }
@@ -605,9 +651,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     <div id="ascii-container"></div>
     <div id="overlay">
         <div class="box">
-            <h1>PLAY GAME</h1>
+            <h1>${title}</h1>
             <p>Click to start</p>
-            <p style="font-size: 12px; color: #aaa;">WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution</p>
+            <p style="font-size: 12px; color: #aaa;">${inst}</p>
         </div>
     </div>
     <script>
@@ -790,6 +836,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            
+            closeExportMenu();
         }
 
         function triggerSceneImport(mode = 'free_fpv') {
@@ -1183,7 +1231,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         });
 
         document.addEventListener('click', () => {
-            if((currentMode === 'room' || currentMode === 'free_fpv') && !pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex') {
+            const isExportPanelOpen = document.getElementById('panel-export') && document.getElementById('panel-export').classList.contains('active');
+            if((currentMode === 'room' || currentMode === 'free_fpv') && !pointerLockControls.isLocked && document.getElementById('panel-spawn').style.display !== 'flex' && !isExportPanelOpen) {
                 pointerLockControls.lock();
             }
         });
