@@ -31,6 +31,8 @@
             height: 100%;
             pointer-events: none;
             z-index: 1;
+            overflow: hidden;
+            letter-spacing: 0;
         }
 
         #ui-layer {
@@ -591,7 +593,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     <title>ASCII 3D Game</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; color: #0f0; font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; user-select: none; }
-        #ascii-container { white-space: pre; line-height: 10px; font-size: 10px; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        #ascii-container { white-space: pre; line-height: 10px; font-size: 10px; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden; letter-spacing: 0; }
         #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); cursor: pointer; pointer-events: auto; }
         .box { border: 2px solid #0f0; padding: 20px; text-align: center; background: rgba(0,20,0,0.9); border-radius: 10px; box-shadow: 0 0 20px #0f0; }
         h1 { margin-top: 0; text-shadow: 0 0 5px #0f0; }
@@ -666,7 +668,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         const centerLight = new THREE.PointLight(0xaabbff, 1.5, 80);
         centerLight.position.set(0, 12, 0);
         centerLight.castShadow = true;
-        centerLight.shadow.bias = -0.001;
+        centerLight.shadow.bias = -0.005;
         scene.add(centerLight);
         const ceilingLight = new THREE.PointLight(0xffddaa, 0.8, 60);
         ceilingLight.position.set(0, 20, 0);
@@ -674,7 +676,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         scene.add(ceilingLight);
 
         const matFloor = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(60, 1, 60), matFloor);
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(1000, 1, 1000), matFloor);
         floor.position.y = -0.5;
         floor.receiveShadow = true;
         floor.visible = ${floorVis};
@@ -763,16 +765,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             renderer.render(scene, camera);
             gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             
-            let asciiStr = "";
+            let asciiLines = [];
             for (let y = rows - 1; y >= 0; y--) {
+                let rowStr = "";
                 for (let x = 0; x < cols; x++) {
                     const idx = (y * cols + x) * 4;
                     const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
-                    asciiStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+                    rowStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
                 }
-                asciiStr += "\\n";
+                asciiLines.push(rowStr);
             }
-            asciiContainer.textContent = asciiStr;
+            asciiContainer.textContent = asciiLines.join('\\n');
         }
         animate();
     <\/script>
@@ -1015,7 +1018,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         const centerLight = new THREE.PointLight(0xaabbff, 1.5, 80);
         centerLight.position.set(0, 12, 0);
         centerLight.castShadow = true;
-        centerLight.shadow.bias = -0.001;
+        centerLight.shadow.bias = -0.005;
         window.scene.add(centerLight);
         
         const ceilingLight = new THREE.PointLight(0xffddaa, 0.8, 60);
@@ -1026,7 +1029,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.roomGroup = new THREE.Group();
         const matFloor = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
         const roomSize = 60;
-        const floorGeo = new THREE.BoxGeometry(roomSize, 1, roomSize);
+        const floorGeo = new THREE.BoxGeometry(1000, 1, 1000);
         const floor = new THREE.Mesh(floorGeo, matFloor);
         floor.position.y = -0.5;
         floor.receiveShadow = true;
@@ -1379,8 +1382,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             window.renderer.render(window.scene, window.camera);
             gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             
-            let asciiStr = "";
+            let asciiLines = [];
             for (let y = rows - 1; y >= 0; y--) {
+                let rowStr = "";
                 for (let x = 0; x < cols; x++) {
                     const index = (y * cols + x) * 4;
                     const r = pixels[index];
@@ -1389,12 +1393,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     
                     const luma = 0.299 * r + 0.587 * g + 0.114 * b;
                     const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
-                    asciiStr += ramp[charIndex];
+                    rowStr += ramp[charIndex];
                 }
-                asciiStr += "\n";
+                asciiLines.push(rowStr);
             }
             
-            asciiContainer.textContent = asciiStr;
+            asciiContainer.textContent = asciiLines.join('\n');
         }
 
         setLanguage('pt');
