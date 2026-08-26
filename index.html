@@ -184,6 +184,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -222,6 +224,8 @@
             </div>
             
             <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;" data-i18n="btnMyObjs">Meus Objetos</button>
+
+            <button onclick="showPanel('panel-community')" style="margin-bottom: 15px; background: #660099; border-color: #ff55ff; color: #ff55ff;" data-i18n="btnCommunity">Galeria da Comunidade</button>
 
             <button onclick="enterRoom()" style="margin-bottom: 15px;" data-i18n="btnCreator">Entrar (Modo Criador)</button>
             
@@ -269,12 +273,30 @@
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
         </div>
 
+        <div id="panel-community" class="panel" style="max-width: 800px; width: 95%;">
+            <h2 data-i18n="btnCommunity">Galeria da Comunidade</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                <input type="text" id="comm-search" data-i18n="searchPlaceholder" placeholder="Buscar / Search..." style="flex: 2; padding: 5px; min-width: 150px;" oninput="renderCommunityList()">
+                <button onclick="loadCommunityGallery()" style="padding: 5px 10px; font-family: monospace;" data-i18n="btnRefresh">[ Atualizar / Refresh ]</button>
+            </div>
+
+            <div id="community-list" style="max-height: 400px; overflow-y: auto;"></div>
+            <div id="comm-loading-msg" data-i18n="loadingMsg" style="display:none; text-align:center; margin: 10px 0; color: #0f0;">[ CARREGANDO... ]</div>
+            
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
+        </div>
+
         <div id="panel-api" class="panel">
             <h2 data-i18n="apiConfigTitle">Configuração da API</h2>
             <p data-i18n="apiConfigDesc">Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
             <input type="password" id="api-key-input" placeholder="AIzaSy...">
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveKey">Salvar Chave</button>
+            <div style="margin-top: 15px;">
+                <label data-i18n="authorNameLabel" style="display:block; margin-bottom:5px; font-size: 14px;">Seu Nome (Para a Galeria)</label>
+                <input type="text" id="author-name-input" data-i18n="authorNamePlaceholder" placeholder="Ex: Joãozinho">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveConfig">Salvar Configurações</button>
                 <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnDelKey">Deletar Chave</button>
             </div>
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
@@ -344,6 +366,17 @@
         const i18n = {
             pt: {
                 title: "GERADOR VOXEL ASCII 3D",
+                btnCommunity: "Galeria da Comunidade",
+                btnRefresh: "[ Atualizar / Refresh ]",
+                btnPublish: "🌐 Publicar",
+                btnDownload: "💾 Salvar Localmente",
+                alertPublished: "Publicado com sucesso!",
+                alertDownloaded: "Salvo com sucesso nos seus objetos!",
+                btnRedownload: "Baixar Novamente",
+                authorNameLabel: "Seu Nome (Para a Galeria)",
+                authorNamePlaceholder: "Ex: Joãozinho",
+                byAuthor: "por",
+                btnSaveConfig: "Salvar Configurações",
                 btnCreate: "Criar Novo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Meus Objetos",
@@ -415,6 +448,17 @@
             },
             en: {
                 title: "3D ASCII VOXEL GENERATOR",
+                btnCommunity: "Community Gallery",
+                btnRefresh: "[ Refresh ]",
+                btnPublish: "🌐 Publish",
+                btnDownload: "💾 Save Locally",
+                alertPublished: "Published successfully!",
+                alertDownloaded: "Saved successfully to your objects!",
+                btnRedownload: "Redownload",
+                authorNameLabel: "Your Name (For Gallery)",
+                authorNamePlaceholder: "Ex: Player1",
+                byAuthor: "by",
+                btnSaveConfig: "Save Settings",
                 btnCreate: "Create New",
                 btnImport: "Import Object",
                 btnMyObjs: "My Objects",
@@ -486,6 +530,17 @@
             },
             es: {
                 title: "GENERADOR VOXEL ASCII 3D",
+                btnCommunity: "Galería de la Comunidad",
+                btnRefresh: "[ Actualizar ]",
+                btnPublish: "🌐 Publicar",
+                btnDownload: "💾 Guardar Localmente",
+                alertPublished: "¡Publicado con éxito!",
+                alertDownloaded: "¡Guardado con éxito en tus objetos!",
+                btnRedownload: "Volver a descargar",
+                authorNameLabel: "Tu nombre (Para la galería)",
+                authorNamePlaceholder: "Ej: Jugador1",
+                byAuthor: "por",
+                btnSaveConfig: "Guardar Configuración",
                 btnCreate: "Crear Nuevo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Mis Objetos",
@@ -557,6 +612,17 @@
             },
             ja: {
                 title: "3D ASCII ボクセル ジェネレーター",
+                btnCommunity: "コミュニティギャラリー",
+                btnRefresh: "[ 更新 ]",
+                btnPublish: "🌐 公開",
+                btnDownload: "💾 ローカルに保存",
+                alertPublished: "正常に公開されました！",
+                alertDownloaded: "オブジェクトに正常に保存されました！",
+                btnRedownload: "再ダウンロード",
+                authorNameLabel: "あなたの名前（ギャラリー用）",
+                authorNamePlaceholder: "例：プレイヤー1",
+                byAuthor: "作成者:",
+                btnSaveConfig: "設定を保存",
                 btnCreate: "新規作成",
                 btnImport: "インポート",
                 btnMyObjs: "マイオブジェクト",
@@ -710,6 +776,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if(panelId === 'panel-objects') {
                 renderObjectsList();
             }
+            if(panelId === 'panel-community') {
+                loadCommunityGallery();
+            }
             const langContainer = document.getElementById('lang-container');
             if (langContainer) {
                 langContainer.style.display = panelId === 'panel-menu' ? 'block' : 'none';
@@ -718,11 +787,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value.trim();
+            const authorName = document.getElementById('author-name-input').value.trim();
             if(key) {
                 localStorage.setItem('gemini_api_key', key);
-                alert(i18n[currentLang].alertKeySaved);
-                showPanel('panel-menu');
             }
+            if(authorName) {
+                localStorage.setItem('author_name', authorName);
+            } else {
+                localStorage.removeItem('author_name');
+            }
+            alert(i18n[currentLang].alertKeySaved);
+            showPanel('panel-menu');
         }
         
         function deleteApiKey() {
@@ -732,6 +807,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || "";
+        document.getElementById('author-name-input').value = localStorage.getItem('author_name') || "";
 
         let objViewMode = 'list';
 
@@ -901,6 +977,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             <div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 2px; font-size: 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff; flex: 1;">#</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 2px; font-size: 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00; flex: 1;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="publishObject(${index})" title="${i18n[currentLang].btnPublish}" style="padding: 2px; font-size: 10px; background: #660099; color: #ff55ff; border: 1px solid #ff55ff; flex: 1;">${i18n[currentLang].btnPublish}</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 2px; font-size: 10px; background: #300; color: #f00; border: 1px solid #f00; flex: 1;">X</button>
                             </div>
                         `;
@@ -915,6 +992,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                 <button onclick="renameObject(${index}, event)" title="${i18n[currentLang].btnRename}" style="padding: 5px 10px; background: #222; border: 1px solid #555;">${i18n[currentLang].btnRename}</button>
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">${i18n[currentLang].btnTags}</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 5px 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="publishObject(${index})" title="${i18n[currentLang].btnPublish}" style="padding: 5px 10px; background: #660099; color: #ff55ff; border: 1px solid #ff55ff;">${i18n[currentLang].btnPublish}</button>
                                 <button onclick="exportObject(${index}, 'json')" title="JSON" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
                                 <button onclick="exportObject(${index}, 'js')" title="JS" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
@@ -962,6 +1040,151 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 voxelObjects.splice(index, 1);
                 localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
                 renderObjectsList();
+            }
+        }
+
+        // ==========================================
+        // FIREBASE & COMMUNITY LOGIC
+        // ==========================================
+        const firebaseConfig = {
+          projectId: "gothic-icon-13bk6",
+          appId: "1:969900205722:web:9de66b9c85491a75356123",
+          apiKey: "AIzaSyA3NOfJ2vZWaDWUDg5I7LRg2-kziIzn_HI",
+          authDomain: "gothic-icon-13bk6.firebaseapp.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let communityObjects = [];
+
+        async function publishObject(index) {
+            const obj = voxelObjects[index];
+            if (!obj.code || !obj.name) return;
+            
+            try {
+                // Ensure only game-created objects structure are uploaded
+                const authorName = localStorage.getItem('author_name') || "";
+                const dataToUpload = {
+                    name: obj.name,
+                    code: obj.code,
+                    thumbnail: obj.thumbnail || "",
+                    tags: obj.tags || [],
+                    author: authorName,
+                    createdAt: Date.now()
+                };
+                
+                await db.collection("community_objects").add(dataToUpload);
+                alert(i18n[currentLang].alertPublished);
+            } catch (err) {
+                console.error("Erro ao publicar:", err);
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function loadCommunityGallery() {
+            const listDiv = document.getElementById('community-list');
+            const loadingMsg = document.getElementById('comm-loading-msg');
+            const searchInput = document.getElementById('comm-search');
+            
+            listDiv.innerHTML = '';
+            loadingMsg.style.display = 'block';
+
+            try {
+                const snapshot = await db.collection("community_objects").orderBy("createdAt", "desc").limit(50).get();
+                communityObjects = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.id = doc.id;
+                    communityObjects.push(data);
+                });
+                renderCommunityList();
+            } catch (err) {
+                console.error("Erro ao carregar galeria da comunidade:", err);
+                listDiv.innerHTML = `<p style="text-align:center; color:red;">Erro ao carregar.</p>`;
+            } finally {
+                loadingMsg.style.display = 'none';
+            }
+        }
+
+        function renderCommunityList() {
+            const listDiv = document.getElementById('community-list');
+            if(!listDiv) return;
+            listDiv.innerHTML = '';
+            
+            const searchInput = document.getElementById('comm-search');
+            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+
+            let filtered = communityObjects.filter(o => {
+                if (searchQuery && !o.name.toLowerCase().includes(searchQuery) && !(o.tags && o.tags.join(' ').toLowerCase().includes(searchQuery))) return false;
+                return true;
+            });
+
+            if(filtered.length === 0) {
+                listDiv.style.display = 'block';
+                listDiv.innerHTML = `<p style="text-align:center; color:#555;">${i18n[currentLang].emptyGallery}</p>`;
+            } else {
+                listDiv.style.display = 'grid';
+                listDiv.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+                listDiv.style.gap = '15px';
+                
+                filtered.forEach((obj, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.style.flexDirection = 'column';
+                    item.style.alignItems = 'stretch';
+                    item.style.position = 'relative';
+                    item.style.height = '200px';
+                    item.style.padding = '5px';
+                    
+                    const tagsHtml = (obj.tags || []).slice(0,2).map(t => `<span style="background:#0f0; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; display:inline-block; margin-right:2px; margin-top:2px;">${t}</span>`).join('');
+                    const thumbHtml = obj.thumbnail ? `<pre style="font-size: 3px; line-height: 3px; overflow: hidden; pointer-events: none; opacity: 0.8; margin: 0; font-family: monospace; text-align: center;">${obj.thumbnail}</pre>` : `<span style="font-size: 30px; opacity: 0.5;">[ OBJ ]</span>`;
+                    
+                    // Note: We escape string for onclick to prevent issues
+                    const originalIndex = communityObjects.indexOf(obj);
+                    
+                    const isDownloaded = voxelObjects.some(vo => vo.community_id === obj.id || vo.code === obj.code);
+                    const btnText = isDownloaded ? i18n[currentLang].btnRedownload : i18n[currentLang].btnDownload;
+                    const authorHtml = obj.author ? `<div style="font-size:10px; color:#aaa; margin-bottom: 2px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${obj.author}">${i18n[currentLang].byAuthor} ${obj.author}</div>` : '';
+                    
+                    item.innerHTML = `
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,20,0,0.8); margin-bottom: 5px; border: 1px dashed #0f0; position: relative; overflow: hidden;">
+                            ${thumbHtml}
+                            <div style="position: absolute; bottom: 2px; left: 2px;">${tagsHtml}</div>
+                        </div>
+                        <div class="list-item-title" style="text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin-bottom: 2px;" title="${obj.name}">${obj.name}</div>
+                        ${authorHtml}
+                        
+                        <div style="display: flex; gap: 2px; justify-content: center;">
+                            <button onclick="downloadFromCommunity(${originalIndex})" title="${btnText}" style="padding: 5px; font-size: 12px; background: ${isDownloaded ? '#222' : '#660099'}; color: ${isDownloaded ? '#aaa' : '#ff55ff'}; border: 1px solid ${isDownloaded ? '#555' : '#ff55ff'}; flex: 1;">${btnText}</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
+            }
+        }
+
+        function downloadFromCommunity(index) {
+            try {
+                const obj = communityObjects[index];
+                if (!obj) return;
+                const newObj = {
+                    id: 'obj_' + Date.now(),
+                    community_id: obj.id,
+                    name: obj.name,
+                    code: obj.code,
+                    thumbnail: obj.thumbnail || "",
+                    tags: obj.tags || [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    lastUsedAt: Date.now(),
+                    favorite: false
+                };
+                voxelObjects.unshift(newObj);
+                localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                alert(i18n[currentLang].alertDownloaded);
+                renderCommunityList();
+            } catch(e) {
+                console.error("Error downloading", e);
             }
         }
 
@@ -1094,6 +1317,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"><\/script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
 </head>
 <body>
     <div id="ascii-container"></div>
