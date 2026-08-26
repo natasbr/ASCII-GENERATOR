@@ -192,7 +192,7 @@
 
     <div id="ui-layer">
         
-        <div style="position: absolute; top: 20px; right: 20px; z-index: 100; pointer-events: auto;">
+        <div id="lang-container" style="position: absolute; top: 20px; right: 20px; z-index: 100; pointer-events: auto;">
             <select id="lang-select" onchange="setLanguage(this.value)" style="padding: 5px; background: #000; color: #0f0; border: 1px solid #0f0; outline: none; font-family: inherit; font-weight: bold; cursor: pointer;">
                 <option value="pt">🇧🇷 PT</option>
                 <option value="en">🇺🇸 EN</option>
@@ -238,26 +238,51 @@
             <button onclick="showPanel('panel-api')" style="background: #222; border-color: #555; color: #aaa;" data-i18n="btnApi">Configurar API Key (Gemini)</button>
         </div>
 
-        <div id="panel-objects" class="panel">
-            <h2>Meus Objetos</h2>
-            <div id="objects-list" style="max-height: 200px; overflow-y: auto;"></div>
-            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Voltar</button>
+        <div id="panel-objects" class="panel" style="max-width: 800px; width: 95%;">
+            <h2 data-i18n="btnMyObjs">Meus Objetos</h2>
+            
+            <!-- Toolbar -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                <input type="text" id="obj-search" data-i18n="searchPlaceholder" placeholder="Buscar / Search..." style="flex: 2; padding: 5px; min-width: 150px;" oninput="renderObjectsList()">
+                
+                <select id="obj-sort" style="flex: 1; padding: 5px; min-width: 120px;" onchange="renderObjectsList()">
+                    <option value="dateDesc">Mais Recentes</option>
+                    <option value="dateAsc">Mais Antigos</option>
+                    <option value="nameAsc">Nome (A-Z)</option>
+                    <option value="nameDesc">Nome (Z-A)</option>
+                    <option value="lastUsed">Vistos Recentes</option>
+                </select>
+                
+                <select id="obj-filter" style="flex: 1; padding: 5px; min-width: 120px;" onchange="renderObjectsList()">
+                    <option value="all">Todos / All</option>
+                    <option value="favorites">⭐ Favoritos</option>
+                </select>
+                
+                <button onclick="toggleViewMode()" id="view-mode-btn" title="Alternar Visualização" style="padding: 5px 10px; font-family: monospace;">[ Lista ]</button>
+            </div>
+
+            <!-- Tags Filter -->
+            <div id="tags-container" style="margin-bottom: 10px; display: flex; gap: 5px; flex-wrap: wrap; font-size: 12px;"></div>
+
+            <div id="objects-list" style="max-height: 400px; overflow-y: auto;"></div>
+            
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
         </div>
 
         <div id="panel-api" class="panel">
-            <h2>Configuração da API</h2>
-            <p>Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
+            <h2 data-i18n="apiConfigTitle">Configuração da API</h2>
+            <p data-i18n="apiConfigDesc">Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
             <input type="password" id="api-key-input" placeholder="AIzaSy...">
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button onclick="saveApiKey()" style="flex: 1;">Salvar Chave</button>
-                <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;">Deletar Chave</button>
+                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveKey">Salvar Chave</button>
+                <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnDelKey">Deletar Chave</button>
             </div>
-            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Voltar</button>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
         </div>
 
         <div id="panel-create" class="panel">
-            <h2>Criar Novo Objeto</h2>
-            <p>Escolha o modelo de IA que deseja usar:</p>
+            <h2 data-i18n="createModTitle">Criar Novo Objeto</h2>
+            <p data-i18n="chooseModel">Escolha o modelo de IA que deseja usar:</p>
             <select id="model-select">
                 <option value="gemini-3.6-flash">Gemini 3.6 Flash (Recomendado)</option>
                 <option value="gemini-3.6-pro">Gemini 3.6 Pro</option>
@@ -265,19 +290,19 @@
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                 <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             </select>
-            <p style="margin-top: 10px;">Arquivo Base (Opcional - modificar objeto existente):</p>
+            <p style="margin-top: 10px;" data-i18n="baseFileOptional">Arquivo Base (Opcional - modificar objeto existente):</p>
             <input type="file" id="base-file-input" accept=".js,.json,application/javascript,application/json" style="margin-bottom: 10px; padding: 5px; cursor: pointer; border: 1px dashed #0f0; background: #001100;">
-            <p>Descreva o que deseja criar/modificar no objeto:</p>
-            <input type="text" id="prompt-input" placeholder="Ex: Uma espada mágica brilhante...">
-            <button id="generate-btn" onclick="generateObject()" style="margin-top: 10px;">Gerar e Visualizar</button>
-            <div id="loading-msg" style="display:none; text-align:center; margin: 10px 0;">[ GERANDO VIA IA... POR FAVOR AGUARDE ]</div>
-            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;">Cancelar e Voltar</button>
+            <p data-i18n="describePrompt">Descreva o que deseja criar/modificar no objeto:</p>
+            <input type="text" id="prompt-input" data-i18n="promptPlaceholder" placeholder="Ex: Uma espada mágica brilhante...">
+            <button id="generate-btn" onclick="generateObject()" style="margin-top: 10px;" data-i18n="btnGenView">Gerar e Visualizar</button>
+            <div id="loading-msg" data-i18n="loadingMsg" style="display:none; text-align:center; margin: 10px 0;">[ GERANDO VIA IA... POR FAVOR AGUARDE ]</div>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnCancelBack">Cancelar e Voltar</button>
         </div>
         
         <div id="panel-spawn" class="panel">
-            <h2>Escolha um objeto para spawnar</h2>
+            <h2 data-i18n="spawnMenuTitle">Escolha um objeto para spawnar</h2>
             <div id="spawn-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 10px;"></div>
-            <button onclick="closeSpawnMenu()" style="color: #ff5555; border-color: #ff5555;">Cancelar</button>
+            <button onclick="closeSpawnMenu()" style="color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
         </div>
 
         <div id="panel-export" class="panel">
@@ -289,6 +314,15 @@
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button onclick="confirmExportGame()" style="flex: 2;" data-i18n="btnConfirmExport">Baixar HTML</button>
                 <button onclick="closeExportMenu()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="panel-prompt" class="panel" style="z-index: 1000;">
+            <h2 id="prompt-title">Aviso</h2>
+            <input type="text" id="prompt-val" placeholder="...">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="submitCustomPrompt()" style="flex: 2;">OK</button>
+                <button onclick="closeCustomPrompt()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
             </div>
         </div>
 
@@ -333,7 +367,51 @@
                 exportNameLabel: "Título do Jogo:",
                 exportInstLabel: "Instruções do Jogo:",
                 btnConfirmExport: "Baixar HTML",
-                btnCancel: "Cancelar"
+                btnCancel: "Cancelar",
+                searchPlaceholder: "Buscar / Search...",
+                sortDateDesc: "Mais Recentes",
+                sortDateAsc: "Mais Antigos",
+                sortNameAsc: "Nome (A-Z)",
+                sortNameDesc: "Nome (Z-A)",
+                sortLastUsed: "Vistos Recentes",
+                filterAll: "Todos",
+                filterFav: "⭐ Favoritos",
+                viewList: "[ Lista ]",
+                viewGrid: "[ Grade ]",
+                emptyGallery: "Nenhum objeto encontrado.",
+                filterByTag: "Filtrar por Tag:",
+                btnRename: "Renomear",
+                btnTags: "Tags",
+                btnDup: "+Cópia",
+                promptRename: "Novo nome:",
+                promptTags: "Tags (separadas por vírgula):",
+                promptDelete: "Tem certeza que deseja deletar este objeto?",
+                promptNameNewObj: "Nome do novo objeto:",
+                apiConfigTitle: "Configuração da API",
+                apiConfigDesc: "Insira sua Gemini API Key. Ela ficará salva com segurança apenas no armazenamento local (localStorage) do seu navegador.",
+                btnSaveKey: "Salvar Chave",
+                btnDelKey: "Deletar Chave",
+                createModTitle: "Criar Novo Objeto",
+                chooseModel: "Escolha o modelo de IA que deseja usar:",
+                baseFileOptional: "Arquivo Base (Opcional - modificar objeto existente):",
+                describePrompt: "Descreva o que deseja criar/modificar no objeto:",
+                promptPlaceholder: "Ex: Uma espada mágica brilhante...",
+                btnGenView: "Gerar e Visualizar",
+                loadingMsg: "[ GERANDO VIA IA... POR FAVOR AGUARDE ]",
+                btnCancelBack: "Cancelar e Voltar",
+                spawnMenuTitle: "Escolha um objeto para spawnar",
+                alertKeySaved: "Chave salva com sucesso!",
+                alertKeyDeleted: "Chave apagada do armazenamento local!",
+                alertImportScene: "Isto parece ser uma Cena (vários objetos em posições), use o botão 'Carregar Cena' no menu principal.",
+                alertImportSuccess: "Objeto importado com sucesso!",
+                alertImportError: "Erro ao importar o arquivo. Verifique o formato.",
+                alertSceneEmpty: "A cena está vazia!",
+                alertSceneInvalid: "Arquivo de cena inválido.",
+                alertSceneReadError: "Erro ao ler o arquivo.",
+                alertNoApiKey: "Por favor, configure sua chave de API Gemini primeiro!",
+                alertGenError: "Erro ao gerar objeto: ",
+                alertCodeError: "Este objeto gerou um código com erro.",
+                emptySpawnList: "Nenhum objeto criado. Crie um no Menu Principal primeiro."
             },
             en: {
                 title: "3D ASCII VOXEL GENERATOR",
@@ -360,7 +438,51 @@
                 exportNameLabel: "Game Title:",
                 exportInstLabel: "Game Instructions:",
                 btnConfirmExport: "Download HTML",
-                btnCancel: "Cancel"
+                btnCancel: "Cancel",
+                searchPlaceholder: "Search...",
+                sortDateDesc: "Newest",
+                sortDateAsc: "Oldest",
+                sortNameAsc: "Name (A-Z)",
+                sortNameDesc: "Name (Z-A)",
+                sortLastUsed: "Recently Used",
+                filterAll: "All",
+                filterFav: "⭐ Favorites",
+                viewList: "[ List ]",
+                viewGrid: "[ Grid ]",
+                emptyGallery: "No objects found.",
+                filterByTag: "Filter by Tag:",
+                btnRename: "Rename",
+                btnTags: "Tags",
+                btnDup: "+Copy",
+                promptRename: "New name:",
+                promptTags: "Tags (comma separated):",
+                promptDelete: "Are you sure you want to delete this object?",
+                promptNameNewObj: "New object name:",
+                apiConfigTitle: "API Configuration",
+                apiConfigDesc: "Enter your Gemini API Key. It will be securely saved only in your browser's local storage.",
+                btnSaveKey: "Save Key",
+                btnDelKey: "Delete Key",
+                createModTitle: "Create New Object",
+                chooseModel: "Choose the AI model you want to use:",
+                baseFileOptional: "Base File (Optional - modify existing object):",
+                describePrompt: "Describe what you want to create/modify in the object:",
+                promptPlaceholder: "Ex: A glowing magic sword...",
+                btnGenView: "Generate and View",
+                loadingMsg: "[ GENERATING VIA AI... PLEASE WAIT ]",
+                btnCancelBack: "Cancel and Back",
+                spawnMenuTitle: "Choose an object to spawn",
+                alertKeySaved: "Key saved successfully!",
+                alertKeyDeleted: "Key deleted from local storage!",
+                alertImportScene: "This looks like a Scene (multiple objects in positions), use the 'Load Scene' button in the main menu.",
+                alertImportSuccess: "Object imported successfully!",
+                alertImportError: "Error importing the file. Check the format.",
+                alertSceneEmpty: "The scene is empty!",
+                alertSceneInvalid: "Invalid scene file.",
+                alertSceneReadError: "Error reading the file.",
+                alertNoApiKey: "Please setup your Gemini API Key first!",
+                alertGenError: "Error generating object: ",
+                alertCodeError: "This object generated code with errors.",
+                emptySpawnList: "No objects created. Create one in the Main Menu first."
             },
             es: {
                 title: "GENERADOR VOXEL ASCII 3D",
@@ -387,7 +509,51 @@
                 exportNameLabel: "Título del Juego:",
                 exportInstLabel: "Instrucciones del Juego:",
                 btnConfirmExport: "Descargar HTML",
-                btnCancel: "Cancelar"
+                btnCancel: "Cancelar",
+                searchPlaceholder: "Buscar...",
+                sortDateDesc: "Más Recientes",
+                sortDateAsc: "Más Antiguos",
+                sortNameAsc: "Nombre (A-Z)",
+                sortNameDesc: "Nombre (Z-A)",
+                sortLastUsed: "Vistos Recientes",
+                filterAll: "Todos",
+                filterFav: "⭐ Favoritos",
+                viewList: "[ Lista ]",
+                viewGrid: "[ Cuadrícula ]",
+                emptyGallery: "No se encontraron objetos.",
+                filterByTag: "Filtrar por Etiqueta:",
+                btnRename: "Renombrar",
+                btnTags: "Etiquetas",
+                btnDup: "+Copia",
+                promptRename: "Nuevo nombre:",
+                promptTags: "Etiquetas (separadas por comas):",
+                promptDelete: "¿Estás seguro de que quieres eliminar este objeto?",
+                promptNameNewObj: "Nombre del nuevo objeto:",
+                apiConfigTitle: "Configuración de API",
+                apiConfigDesc: "Ingresa tu Gemini API Key. Se guardará de forma segura solo en el almacenamiento local de tu navegador.",
+                btnSaveKey: "Guardar Clave",
+                btnDelKey: "Eliminar Clave",
+                createModTitle: "Crear Nuevo Objeto",
+                chooseModel: "Elige el modelo de IA que quieres usar:",
+                baseFileOptional: "Archivo Base (Opcional - modificar objeto existente):",
+                describePrompt: "Describe lo que quieres crear/modificar en el objeto:",
+                promptPlaceholder: "Ej: Una espada mágica brillante...",
+                btnGenView: "Generar y Ver",
+                loadingMsg: "[ GENERANDO VÍA IA... POR FAVOR ESPERA ]",
+                btnCancelBack: "Cancelar y Volver",
+                spawnMenuTitle: "Elige un objeto para spawnear",
+                alertKeySaved: "¡Clave guardada con éxito!",
+                alertKeyDeleted: "¡Clave eliminada del almacenamiento local!",
+                alertImportScene: "Esto parece ser una Escena (múltiples objetos en posiciones), usa el botón 'Cargar Escena' en el menú principal.",
+                alertImportSuccess: "¡Objeto importado con éxito!",
+                alertImportError: "Error al importar el archivo. Verifica el formato.",
+                alertSceneEmpty: "¡La escena está vacía!",
+                alertSceneInvalid: "Archivo de escena inválido.",
+                alertSceneReadError: "Error al leer el archivo.",
+                alertNoApiKey: "¡Por favor, configura tu API Key de Gemini primero!",
+                alertGenError: "Error al generar el objeto: ",
+                alertCodeError: "Este objeto generó código con errores.",
+                emptySpawnList: "No se han creado objetos. Crea uno en el Menú Principal primero."
             },
             ja: {
                 title: "3D ASCII ボクセル ジェネレーター",
@@ -414,7 +580,51 @@
                 exportNameLabel: "ゲームのタイトル:",
                 exportInstLabel: "ゲームの説明:",
                 btnConfirmExport: "HTMLをダウンロード",
-                btnCancel: "キャンセル"
+                btnCancel: "キャンセル",
+                searchPlaceholder: "検索...",
+                sortDateDesc: "新しい順",
+                sortDateAsc: "古い順",
+                sortNameAsc: "名前 (A-Z)",
+                sortNameDesc: "名前 (Z-A)",
+                sortLastUsed: "最近使った項目",
+                filterAll: "すべて",
+                filterFav: "⭐ お気に入り",
+                viewList: "[ リスト ]",
+                viewGrid: "[ グリッド ]",
+                emptyGallery: "オブジェクトが見つかりません。",
+                filterByTag: "タグで絞り込み:",
+                btnRename: "名前変更",
+                btnTags: "タグ",
+                btnDup: "+コピー",
+                promptRename: "新しい名前:",
+                promptTags: "タグ (カンマ区切り):",
+                promptDelete: "このオブジェクトを削除してもよろしいですか？",
+                promptNameNewObj: "新しいオブジェクト名:",
+                apiConfigTitle: "API設定",
+                apiConfigDesc: "Gemini APIキーを入力してください。ブラウザのローカルストレージにのみ安全に保存されます。",
+                btnSaveKey: "キーを保存",
+                btnDelKey: "キーを削除",
+                createModTitle: "新規オブジェクト作成",
+                chooseModel: "使用するAIモデルを選択してください:",
+                baseFileOptional: "ベースファイル (オプション - 既存のオブジェクトを変更):",
+                describePrompt: "オブジェクトで作成/変更したい内容を説明してください:",
+                promptPlaceholder: "例: 光る魔法の剣...",
+                btnGenView: "生成して表示",
+                loadingMsg: "[ AIで生成中... しばらくお待ちください ]",
+                btnCancelBack: "キャンセルして戻る",
+                spawnMenuTitle: "スポーンするオブジェクトを選択",
+                alertKeySaved: "キーが正常に保存されました！",
+                alertKeyDeleted: "ローカルストレージからキーを削除しました！",
+                alertImportScene: "これはシーン（複数のオブジェクトが配置された状態）のようです。メインメニューの「シーン読み込み」ボタンを使用してください。",
+                alertImportSuccess: "オブジェクトのインポートに成功しました！",
+                alertImportError: "ファイルのインポート中にエラーが発生しました。フォーマットを確認してください。",
+                alertSceneEmpty: "シーンが空です！",
+                alertSceneInvalid: "無効なシーンファイルです。",
+                alertSceneReadError: "ファイルの読み込み中にエラーが発生しました。",
+                alertNoApiKey: "まずGemini APIキーを設定してください！",
+                alertGenError: "オブジェクトの生成中にエラーが発生しました: ",
+                alertCodeError: "このオブジェクトはエラーを含むコードを生成しました。",
+                emptySpawnList: "オブジェクトが作成されていません。まずメインメニューで作成してください。"
             }
         };
 
@@ -423,12 +633,40 @@
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (i18n[lang] && i18n[lang][key]) {
-                    el.innerText = i18n[lang][key];
+                    if (el.tagName === 'INPUT' && el.type === 'text') {
+                        el.placeholder = i18n[lang][key];
+                    } else {
+                        el.innerText = i18n[lang][key];
+                    }
                 }
             });
             setResolution(currentResLevel);
             if (typeof cycleRenderMode === 'function') cycleRenderMode(true);
             updateHUDText();
+            if (document.getElementById('panel-objects').classList.contains('active')) {
+                renderObjectsList();
+                updateStaticGalleryTexts();
+            }
+        }
+        
+        function updateStaticGalleryTexts() {
+            // Update mode button, options, etc that might not be rerendered by renderObjectsList
+            document.getElementById('view-mode-btn').innerText = objViewMode === 'list' ? i18n[currentLang].viewList : i18n[currentLang].viewGrid;
+            
+            const sortSelect = document.getElementById('obj-sort');
+            if (sortSelect && sortSelect.options.length > 0) {
+                sortSelect.options[0].text = i18n[currentLang].sortDateDesc;
+                sortSelect.options[1].text = i18n[currentLang].sortDateAsc;
+                sortSelect.options[2].text = i18n[currentLang].sortNameAsc;
+                sortSelect.options[3].text = i18n[currentLang].sortNameDesc;
+                sortSelect.options[4].text = i18n[currentLang].sortLastUsed;
+            }
+            
+            const filterSelect = document.getElementById('obj-filter');
+            if (filterSelect && filterSelect.options.length > 0) {
+                filterSelect.options[0].text = i18n[currentLang].filterAll;
+                filterSelect.options[1].text = i18n[currentLang].filterFav;
+            }
         }
         
         function updateHUDText() {
@@ -472,13 +710,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if(panelId === 'panel-objects') {
                 renderObjectsList();
             }
+            const langContainer = document.getElementById('lang-container');
+            if (langContainer) {
+                langContainer.style.display = panelId === 'panel-menu' ? 'block' : 'none';
+            }
         }
 
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value.trim();
             if(key) {
                 localStorage.setItem('gemini_api_key', key);
-                alert("Chave salva com sucesso!");
+                alert(i18n[currentLang].alertKeySaved);
                 showPanel('panel-menu');
             }
         }
@@ -486,36 +728,237 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         function deleteApiKey() {
             localStorage.removeItem('gemini_api_key');
             document.getElementById('api-key-input').value = "";
-            alert("Chave apagada do armazenamento local!");
+            alert(i18n[currentLang].alertKeyDeleted);
         }
 
         document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || "";
 
+        let objViewMode = 'list';
+
+        function migrateObjects() {
+            let changed = false;
+            voxelObjects.forEach((obj, idx) => {
+                if (!obj.id) { obj.id = 'obj_' + Date.now() + '_' + idx; changed = true; }
+                if (!obj.createdAt) { obj.createdAt = Date.now() - idx*1000; changed = true; }
+                if (!obj.updatedAt) { obj.updatedAt = obj.createdAt; changed = true; }
+                if (!obj.lastUsedAt) { obj.lastUsedAt = obj.createdAt; changed = true; }
+                if (obj.favorite === undefined) { obj.favorite = false; changed = true; }
+                if (!obj.tags) { obj.tags = []; changed = true; }
+            });
+            if (changed) localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+        }
+
+        function toggleViewMode() {
+            objViewMode = objViewMode === 'list' ? 'grid' : 'list';
+            document.getElementById('view-mode-btn').innerText = objViewMode === 'list' ? i18n[currentLang].viewList : i18n[currentLang].viewGrid;
+            renderObjectsList();
+        }
+
+        function markUsed(index) {
+            voxelObjects[index].lastUsedAt = Date.now();
+            localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+        }
+
+        function toggleFavorite(index, event) {
+            if (event) event.stopPropagation();
+            voxelObjects[index].favorite = !voxelObjects[index].favorite;
+            localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+            renderObjectsList();
+        }
+
+        let promptCallback = null;
+
+        function showCustomPrompt(title, defaultValue, callback) {
+            document.getElementById('prompt-title').innerText = title;
+            document.getElementById('prompt-val').value = defaultValue || '';
+            promptCallback = callback;
+            showPanel('panel-prompt');
+            setTimeout(() => document.getElementById('prompt-val').focus(), 100);
+        }
+
+        function submitCustomPrompt() {
+            const val = document.getElementById('prompt-val').value;
+            closeCustomPrompt();
+            if (promptCallback) promptCallback(val);
+        }
+
+        function closeCustomPrompt() {
+            document.getElementById('panel-prompt').classList.remove('active');
+            showPanel('panel-objects');
+        }
+
+        function renameObject(index, event) {
+            if (event) event.stopPropagation();
+            showCustomPrompt(i18n[currentLang].promptRename, voxelObjects[index].name, function(newName) {
+                if (newName && newName.trim().length > 0) {
+                    voxelObjects[index].name = newName.trim();
+                    voxelObjects[index].updatedAt = Date.now();
+                    localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                    renderObjectsList();
+                }
+            });
+        }
+
+        function duplicateObject(index, event) {
+            if (event) event.stopPropagation();
+            const obj = voxelObjects[index];
+            const newObj = JSON.parse(JSON.stringify(obj));
+            newObj.id = 'obj_' + Date.now();
+            newObj.name = obj.name + " (" + i18n[currentLang].btnDup.replace('+', '') + ")";
+            newObj.createdAt = Date.now();
+            newObj.updatedAt = Date.now();
+            newObj.lastUsedAt = Date.now();
+            newObj.favorite = false;
+            voxelObjects.unshift(newObj);
+            localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+            renderObjectsList();
+        }
+
+        function manageTags(index, event) {
+            if (event) event.stopPropagation();
+            const obj = voxelObjects[index];
+            showCustomPrompt(i18n[currentLang].promptTags, (obj.tags || []).join(', '), function(tagsStr) {
+                if (tagsStr !== null) {
+                    obj.tags = tagsStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                    obj.updatedAt = Date.now();
+                    localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                    renderObjectsList();
+                }
+            });
+        }
+
         function renderObjectsList() {
+            migrateObjects();
+
             const listDiv = document.getElementById('objects-list');
+            if(!listDiv) return;
             listDiv.innerHTML = '';
-            if(voxelObjects.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center; color:#555;">Nenhum objeto criado ainda.</p>';
-                return;
+            
+            const searchInput = document.getElementById('obj-search');
+            const sortSelect = document.getElementById('obj-sort');
+            const filterSelect = document.getElementById('obj-filter');
+            
+            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+            const sortMode = sortSelect ? sortSelect.value : 'dateDesc';
+            const extraFilter = filterSelect ? filterSelect.value : 'all';
+
+            // Filter
+            let filtered = voxelObjects.map((obj, i) => ({ obj, index: i })).filter(item => {
+                const o = item.obj;
+                if (searchQuery && !o.name.toLowerCase().includes(searchQuery) && !(o.tags && o.tags.join(' ').toLowerCase().includes(searchQuery))) return false;
+                if (extraFilter === 'favorites' && !o.favorite) return false;
+                return true;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                const oa = a.obj;
+                const ob = b.obj;
+                if (sortMode === 'dateDesc') return ob.createdAt - oa.createdAt;
+                if (sortMode === 'dateAsc') return oa.createdAt - ob.createdAt;
+                if (sortMode === 'nameAsc') return oa.name.localeCompare(ob.name);
+                if (sortMode === 'nameDesc') return ob.name.localeCompare(oa.name);
+                if (sortMode === 'lastUsed') return (ob.lastUsedAt || 0) - (oa.lastUsedAt || 0);
+                return 0;
+            });
+
+            if(filtered.length === 0) {
+                listDiv.style.display = 'block';
+                listDiv.innerHTML = `<p style="text-align:center; color:#555;">${i18n[currentLang].emptyGallery}</p>`;
+            } else {
+                if (objViewMode === 'grid') {
+                    listDiv.style.display = 'grid';
+                    listDiv.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+                    listDiv.style.gap = '15px';
+                } else {
+                    listDiv.style.display = 'flex';
+                    listDiv.style.flexDirection = 'column';
+                    listDiv.style.gap = '10px';
+                }
+                
+                filtered.forEach(({obj, index}) => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    
+                    if (objViewMode === 'grid') {
+                        item.style.flexDirection = 'column';
+                        item.style.alignItems = 'stretch';
+                        item.style.position = 'relative';
+                        item.style.height = '200px';
+                        item.style.padding = '5px';
+                        
+                        const tagsHtml = (obj.tags || []).slice(0,2).map(t => `<span style="background:#0f0; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; display:inline-block; margin-right:2px; margin-top:2px;">${t}</span>`).join('');
+                        const thumbHtml = obj.thumbnail ? `<pre style="font-size: 3px; line-height: 3px; overflow: hidden; pointer-events: none; opacity: 0.8; margin: 0; font-family: monospace; text-align: center;">${obj.thumbnail}</pre>` : `<span style="font-size: 30px; opacity: 0.5;">[ OBJ ]</span>`;
+                        
+                        item.innerHTML = `
+                            <div style="position: absolute; top: 5px; right: 5px; cursor: pointer; font-size: 16px; z-index: 10;" onclick="toggleFavorite(${index}, event)">${obj.favorite ? '⭐' : '☆'}</div>
+                            <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,20,0,0.8); margin-bottom: 5px; border: 1px dashed #0f0; cursor: pointer; position: relative; overflow: hidden;" onclick="markUsed(${index}); enterSimpleView(${index})">
+                                ${thumbHtml}
+                                <div style="position: absolute; bottom: 2px; left: 2px;">${tagsHtml}</div>
+                            </div>
+                            <div class="list-item-title" style="text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin-bottom: 5px; cursor: text;" onclick="renameObject(${index}, event)" title="${obj.name}">${obj.name}</div>
+                            
+                            <div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;">
+                                <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 2px; font-size: 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff; flex: 1;">#</button>
+                                <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 2px; font-size: 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00; flex: 1;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="deleteObject(${index})" title="X" style="padding: 2px; font-size: 10px; background: #300; color: #f00; border: 1px solid #f00; flex: 1;">X</button>
+                            </div>
+                        `;
+                    } else {
+                        const tagsHtml = (obj.tags || []).map(t => `<span style="background:#0f0; color:#000; font-size:10px; padding:2px 4px; border-radius:3px; display:inline-block; margin-left:5px;">${t}</span>`).join('');
+                        item.innerHTML = `
+                            <div style="display: flex; align-items: center; flex-grow: 1; overflow: hidden;">
+                                <div style="cursor: pointer; margin-right: 10px; font-size: 18px;" onclick="toggleFavorite(${index}, event)">${obj.favorite ? '⭐' : '☆'}</div>
+                                <div class="list-item-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="markUsed(${index}); enterSimpleView(${index})">${obj.name} ${tagsHtml}</div>
+                            </div>
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap; flex-shrink: 0;">
+                                <button onclick="renameObject(${index}, event)" title="${i18n[currentLang].btnRename}" style="padding: 5px 10px; background: #222; border: 1px solid #555;">${i18n[currentLang].btnRename}</button>
+                                <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">${i18n[currentLang].btnTags}</button>
+                                <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 5px 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="exportObject(${index}, 'json')" title="JSON" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
+                                <button onclick="exportObject(${index}, 'js')" title="JS" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
+                                <button onclick="deleteObject(${index})" title="X" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
+                            </div>
+                        `;
+                    }
+                    listDiv.appendChild(item);
+                });
             }
             
-            voxelObjects.forEach((obj, index) => {
-                const item = document.createElement('div');
-                item.className = 'list-item';
-                item.innerHTML = `
-                    <div class="list-item-title" onclick="enterSimpleView(${index})">${obj.name}</div>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="exportObject(${index}, 'json')" title="Exportar (.json)" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
-                        <button onclick="exportObject(${index}, 'js')" title="Exportar (.js bruto)" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
-                        <button onclick="deleteObject(${index})" title="Deletar" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
-                    </div>
-                `;
-                listDiv.appendChild(item);
-            });
+            // Extract all unique tags for the tag filter header
+            const allTags = new Set();
+            voxelObjects.forEach(o => (o.tags||[]).forEach(t => allTags.add(t)));
+            const tagsContainer = document.getElementById('tags-container');
+            if(tagsContainer) {
+                tagsContainer.innerHTML = '';
+                if (allTags.size > 0) {
+                    tagsContainer.innerHTML = `<span style="color:#aaa; display:flex; align-items:center;">${i18n[currentLang].filterByTag}</span>`;
+                    Array.from(allTags).sort().forEach(tag => {
+                        const tagBtn = document.createElement('button');
+                        tagBtn.innerText = tag;
+                        tagBtn.style.padding = '2px 5px';
+                        tagBtn.style.fontSize = '10px';
+                        if (searchQuery === tag.toLowerCase()) {
+                            tagBtn.style.background = '#0f0';
+                            tagBtn.style.color = '#000';
+                        } else {
+                            tagBtn.style.background = '#002200';
+                        }
+                        tagBtn.onclick = () => {
+                            if (searchInput) {
+                                if (searchInput.value.toLowerCase() === tag.toLowerCase()) searchInput.value = '';
+                                else searchInput.value = tag;
+                                renderObjectsList();
+                            }
+                        };
+                        tagsContainer.appendChild(tagBtn);
+                    });
+                }
+            }
         }
         
         function deleteObject(index) {
-            if(confirm("Tem certeza que deseja deletar este objeto?")) {
+            if(confirm(i18n[currentLang].promptDelete)) {
                 voxelObjects.splice(index, 1);
                 localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
                 renderObjectsList();
@@ -540,7 +983,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     if (file.name.toLowerCase().endsWith('.json')) {
                         const parsedData = JSON.parse(content);
                         if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
-                            alert("Isto parece ser uma Cena (vários objetos em posições), use o botão 'Carregar Cena' no menu principal.");
+                            alert(i18n[currentLang].alertImportScene);
                             return;
                         } else if (Array.isArray(parsedData)) {
                             voxelObjects.unshift(...parsedData);
@@ -559,11 +1002,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     if(document.getElementById('panel-objects').classList.contains('active')) {
                         renderObjectsList();
                     }
-                    alert("Objeto importado com sucesso!");
+                    alert(i18n[currentLang].alertImportSuccess);
                     
                 } catch(err) {
                     console.error("Erro na importação:", err);
-                    alert("Erro ao importar o arquivo. Verifique o formato.");
+                    alert(i18n[currentLang].alertImportError);
                 }
             };
             reader.readAsText(file);
@@ -601,7 +1044,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         // ==========================================
         function saveScene() {
             if (currentSceneData.length === 0) {
-                alert("A cena está vazia! / Scene is empty!");
+                alert(i18n[currentLang].alertSceneEmpty);
                 return;
             }
             const content = JSON.stringify(currentSceneData, null, 2);
@@ -618,7 +1061,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         function openExportMenu() {
             if (currentSceneData.length === 0) {
-                alert("A cena está vazia! / Scene is empty!");
+                alert(i18n[currentLang].alertSceneEmpty);
                 return;
             }
             pointerLockControls.unlock();
@@ -917,10 +1360,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                         const targetMode = window.sceneImportMode || 'free_fpv';
                         loadSceneIntoMode(parsedData, targetMode);
                     } else {
-                        alert("Arquivo de cena inválido.");
+                        alert(i18n[currentLang].alertSceneInvalid);
                     }
                 } catch(err) {
-                    alert("Erro ao ler o arquivo.");
+                    alert(i18n[currentLang].alertSceneReadError);
                 }
             };
             reader.readAsText(file);
@@ -974,7 +1417,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         async function generateObject() {
             const apiKey = localStorage.getItem('gemini_api_key');
             if (!apiKey) {
-                alert("Por favor, configure sua chave de API Gemini primeiro!");
+                alert(i18n[currentLang].alertNoApiKey);
                 showPanel('panel-api');
                 return;
             }
@@ -1049,9 +1492,31 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 
                 enterSimpleView(0);
                 
+                // Auto generate thumbnail after allowing time to render
+                setTimeout(() => {
+                    const asciiEl = document.getElementById('ascii-container');
+                    if (asciiEl && asciiEl.textContent) {
+                        const lines = asciiEl.textContent.split('\n');
+                        const startY = Math.max(0, Math.floor(lines.length / 2) - 10);
+                        const endY = Math.min(lines.length, startY + 20);
+                        let thumb = "";
+                        for(let y = startY; y < endY; y++) {
+                            if (!lines[y]) continue;
+                            const line = lines[y];
+                            const startX = Math.max(0, Math.floor(line.length / 2) - 25);
+                            thumb += line.substring(startX, startX + 50) + "\n";
+                        }
+                        voxelObjects[0].thumbnail = thumb;
+                        localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                        if (document.getElementById('panel-objects').classList.contains('active')) {
+                            renderObjectsList();
+                        }
+                    }
+                }, 2000);
+                
             } catch(e) {
                 console.error(e);
-                alert("Erro ao gerar objeto: " + e.message);
+                alert(i18n[currentLang].alertGenError + e.message);
             } finally {
                 document.getElementById('generate-btn').disabled = false;
                 document.getElementById('loading-msg').style.display = 'none';
@@ -1397,7 +1862,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 eval(voxelObjects[objIndex].code);
             } catch(e) {
                 console.error("Erro ao carregar o objeto 3D:", e);
-                alert("Este objeto gerou um código com erro.");
+                alert(i18n[currentLang].alertCodeError);
             }
         }
 
@@ -1438,7 +1903,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             listDiv.innerHTML = '';
             
             if(voxelObjects.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center;">Nenhum objeto criado. Crie um no Menu Principal primeiro.</p>';
+                listDiv.innerHTML = `<p style="text-align:center;">${i18n[currentLang].emptySpawnList}</p>`;
             } else {
                 voxelObjects.forEach((obj, index) => {
                     const btn = document.createElement('button');
