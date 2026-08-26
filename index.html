@@ -307,6 +307,36 @@
         let currentSceneData = [];
         let currentLang = 'pt';
         
+        let undoStack = [];
+        let redoStack = [];
+
+        function pushUndoState() {
+            undoStack.push(JSON.stringify(currentSceneData));
+            if (undoStack.length > 20) undoStack.shift();
+            redoStack = [];
+            autosaveScene();
+        }
+
+        function autosaveScene() {
+            localStorage.setItem('autosave_scene', JSON.stringify(currentSceneData));
+        }
+
+        function undo() {
+            if (undoStack.length > 0) {
+                redoStack.push(JSON.stringify(currentSceneData));
+                const prevState = undoStack.pop();
+                loadSceneIntoMode(JSON.parse(prevState), currentMode, true);
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                undoStack.push(JSON.stringify(currentSceneData));
+                const nextState = redoStack.pop();
+                loadSceneIntoMode(JSON.parse(nextState), currentMode, true);
+            }
+        }
+        
         const i18n = {
             pt: {
                 title: "GERADOR VOXEL ASCII 3D",
@@ -505,6 +535,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 item.innerHTML = `
                     <div class="list-item-title" onclick="enterSimpleView(${index})">${obj.name}</div>
                     <div style="display: flex; gap: 5px;">
+                        <button onclick="setMenuBG(${index})" title="Usar no Menu" style="padding: 5px 10px; background: #330066; color: #aa00ff; border: 1px solid #aa00ff;">BG</button>
                         <button onclick="exportObject(${index}, 'json')" title="Exportar (.json)" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
                         <button onclick="exportObject(${index}, 'js')" title="Exportar (.js bruto)" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
                         <button onclick="deleteObject(${index})" title="Deletar" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
@@ -636,11 +667,14 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             
             const sceneJson = JSON.stringify(currentSceneData);
             const floorVis = floor.visible;
+            const camPos = pointerLockControls.getObject().position.toArray();
+            const camEuler = window.camera.rotation.toArray();
+            const camRot = [camEuler[0], camEuler[1], camEuler[2], camEuler[3]];
             const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>${title}</title>
     <style>
         body { margin: 0; padding: 0; background-color: #000; color: #0f0; font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; user-select: none; }
@@ -648,6 +682,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); cursor: pointer; pointer-events: auto; }
         .box { border: 2px solid #0f0; padding: 20px; text-align: center; background: rgba(0,20,0,0.9); border-radius: 10px; box-shadow: 0 0 20px #0f0; }
         h1 { margin-top: 0; text-shadow: 0 0 5px #0f0; }
+        /* mobile controls */
+        #joystick-zone { position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; background: rgba(0,255,0,0.1); border: 2px solid #0f0; border-radius: 50%; display: none; z-index: 20; touch-action: none; }
+        #joystick-knob { position: absolute; top: 30px; left: 30px; width: 60px; height: 60px; background: rgba(0,255,0,0.5); border-radius: 50%; pointer-events: none; }
+        #look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; z-index: 10; display: none; touch-action: none; }
+        @media (max-width: 768px) { #joystick-zone, #look-zone { display: block; } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"><\/script>
@@ -657,10 +696,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     <div id="overlay">
         <div class="box">
             <h1>${title}</h1>
-            <p>Click to start</p>
+            <p>Click/Tap to start</p>
             <p style="font-size: 12px; color: #aaa;">${inst}</p>
         </div>
     </div>
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="look-zone"></div>
     <script>
         const sceneData = ${sceneJson};
         const scene = new THREE.Scene();
@@ -696,7 +737,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         function cycleRenderMode() {
             currentRenderMode = (currentRenderMode + 1) % renderModes.length;
             const canvas = window.renderer.domElement;
-            
             if (currentRenderMode === 0) {
                 document.getElementById('ascii-container').style.display = 'block';
                 canvas.style.opacity = '0';
@@ -706,7 +746,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 document.getElementById('ascii-container').style.display = 'none';
                 canvas.style.opacity = '1';
                 canvas.style.pointerEvents = 'auto';
-                
                 if (currentRenderMode === 3) {
                     window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
                     window.renderer.toneMappingExposure = 1.2;
@@ -715,16 +754,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     window.renderer.toneMappingExposure = 1.0;
                 }
             }
-            
             window.scene.overrideMaterial = null;
-            if (currentRenderMode === 2) {
-                window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-            } else if (currentRenderMode === 4) {
-                window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
-            } else if (currentRenderMode === 5) {
-                window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
-            }
-            
+            if (currentRenderMode === 2) window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            else if (currentRenderMode === 4) window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
+            else if (currentRenderMode === 5) window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
             setupAsciiGrid();
         }
 
@@ -733,21 +766,14 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if (currentResLevel === 0) asciiScale = 1.0;
             else if (currentResLevel === 1) asciiScale = 0.75;
             else if (currentResLevel === 2) asciiScale = 0.5;
-            
-            charW = 6 * asciiScale;
-            charH = 10 * asciiScale;
-            
+            charW = 6 * asciiScale; charH = 10 * asciiScale;
             asciiContainer.style.transform = \`scale(\${asciiScale})\`;
             asciiContainer.style.transformOrigin = 'top left';
             asciiContainer.style.width = \`\${100 / asciiScale}%\`;
             asciiContainer.style.height = \`\${100 / asciiScale}%\`;
-            
             setupAsciiGrid();
         }
-
-        function cycleResolution() {
-            setResolution(currentResLevel + 1);
-        }
+        function cycleResolution() { setResolution(currentResLevel + 1); }
 
         function setupAsciiGrid() {
             if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0) {
@@ -771,7 +797,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         const centerLight = new THREE.PointLight(0xaabbff, 1.5, 80);
         centerLight.position.set(0, 12, 0);
         centerLight.castShadow = true;
-        centerLight.shadow.bias = -0.005;
         scene.add(centerLight);
         const ceilingLight = new THREE.PointLight(0xffddaa, 0.8, 60);
         ceilingLight.position.set(0, 20, 0);
@@ -787,7 +812,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         const controls = new THREE.PointerLockControls(camera, document.body);
         scene.add(controls.getObject());
-        controls.getObject().position.set(0, 5, 10);
+        
+        // Restore camera state
+        controls.getObject().position.fromArray([${camPos.join(',')}]);
+        window.camera.rotation.fromArray([${camRot[0]}, ${camRot[1]}, ${camRot[2]}, "${camRot[3]}"]);
 
         sceneData.forEach(item => {
             window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
@@ -812,9 +840,16 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.spawnTargetPosition = null;
 
         const overlay = document.getElementById('overlay');
-        overlay.addEventListener('click', () => controls.lock());
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        
+        overlay.addEventListener('click', () => {
+            if (!isMobile) controls.lock();
+            overlay.style.display = 'none';
+        });
         controls.addEventListener('lock', () => overlay.style.display = 'none');
-        controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+        controls.addEventListener('unlock', () => {
+            if (!isMobile) overlay.style.display = 'flex';
+        });
 
         let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
         document.addEventListener('keydown', (e) => {
@@ -840,6 +875,43 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         });
 
+        // Mobile Controls
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const lookZone = document.getElementById('look-zone');
+        let jx = 0, jy = 0, touchId = null, lookTouchId = null, lastLookX = 0, lastLookY = 0;
+        
+        joystickZone.addEventListener('touchstart', e => { e.preventDefault(); touchId = e.changedTouches[0].identifier; updateJoystick(e.changedTouches[0]); });
+        joystickZone.addEventListener('touchmove', e => { e.preventDefault(); for(let t of e.changedTouches) { if(t.identifier === touchId) updateJoystick(t); }});
+        joystickZone.addEventListener('touchend', e => { e.preventDefault(); for(let t of e.changedTouches) { if(t.identifier === touchId) resetJoystick(); }});
+        function updateJoystick(t) {
+            const rect = joystickZone.getBoundingClientRect();
+            const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+            let dx = t.clientX - cx, dy = t.clientY - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy), max = rect.width/2;
+            if (dist > max) { dx = (dx/dist)*max; dy = (dy/dist)*max; }
+            joystickKnob.style.transform = \`translate(\${dx}px, \${dy}px)\`;
+            jx = dx / max; jy = dy / max;
+        }
+        function resetJoystick() { joystickKnob.style.transform = 'translate(0px, 0px)'; jx = 0; jy = 0; touchId = null; }
+
+        lookZone.addEventListener('touchstart', e => { e.preventDefault(); lookTouchId = e.changedTouches[0].identifier; lastLookX = e.changedTouches[0].clientX; lastLookY = e.changedTouches[0].clientY; });
+        lookZone.addEventListener('touchmove', e => {
+            e.preventDefault();
+            for (let t of e.changedTouches) {
+                if (t.identifier === lookTouchId) {
+                    const dx = t.clientX - lastLookX; const dy = t.clientY - lastLookY;
+                    lastLookX = t.clientX; lastLookY = t.clientY;
+                    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+                    euler.setFromQuaternion(camera.quaternion);
+                    euler.y -= dx * 0.005; euler.x -= dy * 0.005;
+                    euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
+                    camera.quaternion.setFromEuler(euler);
+                }
+            }
+        });
+        lookZone.addEventListener('touchend', e => { e.preventDefault(); for(let t of e.changedTouches) { if(t.identifier === lookTouchId) lookTouchId = null; }});
+
         const velocity = new THREE.Vector3(), direction = new THREE.Vector3();
         let prevTime = performance.now();
         const gl = renderer.getContext();
@@ -849,19 +921,36 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
             
-            if (controls.isLocked) {
+            if (controls.isLocked || isMobile) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 velocity.y -= velocity.y * 10.0 * delta;
-                direction.z = Number(moveF) - Number(moveB);
-                direction.x = Number(moveR) - Number(moveL);
-                direction.y = Number(moveD) - Number(moveU);
+                
+                if (isMobile) {
+                    direction.z = jy;
+                    direction.x = jx;
+                    direction.y = 0;
+                } else {
+                    direction.z = Number(moveF) - Number(moveB);
+                    direction.x = Number(moveR) - Number(moveL);
+                    direction.y = Number(moveD) - Number(moveU);
+                }
+                
                 direction.normalize();
-                if(moveF || moveB) velocity.z -= direction.z * 100.0 * delta;
-                if(moveL || moveR) velocity.x -= direction.x * 100.0 * delta;
+                if(moveF || moveB || isMobile) velocity.z -= direction.z * 100.0 * delta;
+                if(moveL || moveR || isMobile) velocity.x -= direction.x * 100.0 * delta;
                 if(moveU || moveD) velocity.y -= direction.y * 100.0 * delta;
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
+                
+                if (isMobile) {
+                    const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                    const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                    camDir.y = 0; camDir.normalize(); camRight.y = 0; camRight.normalize();
+                    const moveVec = camDir.multiplyScalar(-velocity.z * delta).add(camRight.multiplyScalar(-velocity.x * delta));
+                    controls.getObject().position.add(moveVec);
+                } else {
+                    controls.moveRight(-velocity.x * delta);
+                    controls.moveForward(-velocity.z * delta);
+                }
                 controls.getObject().position.y -= velocity.y * delta;
             }
             prevTime = time;
@@ -869,7 +958,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             renderer.render(scene, camera);
             if (currentRenderMode === 0) {
                 gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-                
                 let asciiLines = [];
                 for (let y = rows - 1; y >= 0; y--) {
                     let rowStr = "";
@@ -927,25 +1015,32 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             event.target.value = '';
         }
 
-        function loadSceneIntoMode(sceneData, targetMode) {
+        function loadSceneIntoMode(sceneData, targetMode, skipAutoload = false) {
+            currentMode = targetMode;
+            showPanel(null);
+            document.getElementById('hud').classList.add('active');
+            document.getElementById('crosshair').classList.add('active');
+            
             if (targetMode === 'room') {
-                enterRoom();
+                document.getElementById('spawn-btn').style.display = 'block';
+                document.getElementById('save-scene-btn').style.display = 'block';
+                document.getElementById('export-game-btn').style.display = 'block';
             } else {
-                currentMode = 'free_fpv';
-                showPanel(null);
-                document.getElementById('hud').classList.add('active');
-                document.getElementById('crosshair').classList.add('active');
                 document.getElementById('spawn-btn').style.display = 'none';
                 document.getElementById('save-scene-btn').style.display = 'none';
                 document.getElementById('export-game-btn').style.display = 'none';
-
-                clearCustomObjects();
-                window.roomGroup.visible = true; 
-
-                orbitControls.enabled = false;
-                pointerLockControls.getObject().position.set(0, 10, 20);
-                pointerLockControls.lock();
             }
+
+            clearCustomObjects();
+            window.roomGroup.visible = true; 
+            orbitControls.enabled = false;
+            orbitControls.autoRotate = false;
+            
+            if (targetMode === 'free_fpv') {
+                pointerLockControls.getObject().position.set(0, 10, 20);
+            }
+            
+            updateHUDText();
 
             currentSceneData = sceneData;
 
@@ -956,16 +1051,14 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 window.currentSpawnId = item.spawnId || (Date.now() + Math.random());
                 item.spawnId = window.currentSpawnId;
                 
-                try {
-                    eval(item.code);
-                } catch(e) {
-                    console.error("Erro ao carregar objeto da cena:", e);
-                }
+                try { eval(item.code); } catch(e) { console.error(e); }
             });
             window.spawnTargetPosition = null;
             window.spawnTargetScale = null;
             window.spawnTargetRotation = null;
             window.currentSpawnId = null;
+
+            if (!skipAutoload) pointerLockControls.lock();
         }
 
         // ==========================================
@@ -1257,6 +1350,13 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if (event.code === 'KeyV') cycleResolution();
             if (event.code === 'KeyM') cycleRenderMode();
             
+            if (event.code === 'KeyZ' && event.ctrlKey) { undo(); return; }
+            if (event.code === 'KeyY' && event.ctrlKey) { redo(); return; }
+            if (event.code === 'KeyP' && (currentMode === 'room' || currentMode === 'free_fpv')) {
+                if (document.getElementById('panel-spawn').style.display === 'none') openSpawnMenu();
+                else closeSpawnMenu();
+            }
+            
             if(currentMode !== 'room' && currentMode !== 'free_fpv') return;
             switch (event.code) {
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
@@ -1286,6 +1386,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             const sceneItemIndex = currentSceneData.findIndex(item => item.spawnId === rootObj.userData.spawnId);
                             
                             if (event.code === 'KeyX' || event.code === 'Delete') {
+                                pushUndoState();
                                 window.scene.remove(rootObj);
                                 currentCustomObjects = currentCustomObjects.filter(o => o !== rootObj);
                                 if (sceneItemIndex !== -1) currentSceneData.splice(sceneItemIndex, 1);
@@ -1295,6 +1396,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                     updateHUDText();
                                 }
                             } else if (event.code === 'KeyR') {
+                                pushUndoState();
                                 rootObj.rotation.y += Math.PI / 2;
                                 if (sceneItemIndex !== -1) {
                                     currentSceneData[sceneItemIndex].rotation = {
@@ -1304,6 +1406,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                     };
                                 }
                             } else if (['Digit0', 'Numpad0', 'Digit1', 'Numpad1'].includes(event.code)) {
+                                pushUndoState();
                                 const scaleSpeed = 0.15;
                                 const scaleDelta = (event.code === 'Digit1' || event.code === 'Numpad1') ? (1 + scaleSpeed) : (1 - scaleSpeed);
                                 
@@ -1317,6 +1420,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                     };
                                 }
                             } else if (['PageUp', 'PageDown'].includes(event.code)) {
+                                pushUndoState();
                                 const moveSpeed = 0.5;
                                 rootObj.position.y += (event.code === 'PageUp') ? moveSpeed : -moveSpeed;
                                 
@@ -1389,6 +1493,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             
             window.camera.position.set(10, 10, 15);
             orbitControls.enabled = true;
+            orbitControls.autoRotate = false;
             orbitControls.target.set(0, 0, 0);
             orbitControls.update();
             pointerLockControls.unlock();
@@ -1401,31 +1506,52 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         }
 
-        function enterRoom() {
-            currentMode = 'room';
-            showPanel(null);
-            document.getElementById('hud').classList.add('active');
-            document.getElementById('crosshair').classList.add('active');
-            document.getElementById('spawn-btn').style.display = 'block';
-            document.getElementById('save-scene-btn').style.display = 'block';
-            document.getElementById('export-game-btn').style.display = 'block';
-            updateHUDText();
-            
-            clearCustomObjects();
-            window.roomGroup.visible = true; 
-            
-            orbitControls.enabled = false;
+        function enterRoom(skipAutoload = false) {
+            if (!skipAutoload) {
+                let savedScene = localStorage.getItem('autosave_scene');
+                if (savedScene && savedScene !== '[]') {
+                    try {
+                        const parsed = JSON.parse(savedScene);
+                        if (parsed.length > 0) {
+                            loadSceneIntoMode(parsed, 'room', false);
+                            return;
+                        }
+                    } catch(e) {}
+                }
+            }
+            loadSceneIntoMode([], 'room', false);
             pointerLockControls.getObject().position.set(0, 5, 10);
-            
-            pointerLockControls.lock();
+        }
+
+        function setMenuBG(index) {
+            const obj = voxelObjects[index];
+            localStorage.setItem('menu_bg_object', obj.code);
+            alert("Fundo definido! Volte ao menu principal para ver.");
+            loadMenuBG();
+        }
+
+        function loadMenuBG() {
+            let bgCode = localStorage.getItem('menu_bg_object');
+            if (bgCode && currentMode === 'menu') {
+                clearCustomObjects();
+                window.roomGroup.visible = false;
+                window.camera.position.set(10, 10, 15);
+                orbitControls.enabled = true;
+                orbitControls.autoRotate = true;
+                orbitControls.autoRotateSpeed = 2.0;
+                orbitControls.target.set(0, 0, 0);
+                try { eval(bgCode); } catch(e) {}
+            }
         }
 
         function exitToMenu() {
+            if (currentMode === 'room' || currentMode === 'free_fpv') autosaveScene();
             currentMode = 'menu';
             pointerLockControls.unlock();
             orbitControls.enabled = false;
             document.getElementById('hud').classList.remove('active');
             document.getElementById('crosshair').classList.remove('active');
+            loadMenuBG();
             showPanel('panel-menu');
         }
 
@@ -1471,6 +1597,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 const intersects = raycaster.intersectObjects([window.roomGroup], true); 
                 
                 if (intersects.length > 0) {
+                    pushUndoState();
                     window.spawnTargetPosition = intersects[0].point;
                     window.spawnTargetScale = new THREE.Vector3(1, 1, 1);
                     window.spawnTargetRotation = new THREE.Vector3(0, 0, 0);
@@ -1544,7 +1671,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 }
             }
             
-            if(currentMode === 'simple') {
+            if(currentMode === 'simple' || currentMode === 'menu') {
                 orbitControls.update();
             }
 
@@ -1575,6 +1702,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         setLanguage('pt');
+        loadMenuBG();
         showPanel('panel-menu');
         animate();
 
