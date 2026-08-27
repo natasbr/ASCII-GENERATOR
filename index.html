@@ -307,10 +307,35 @@
 
         <div id="panel-export" class="panel">
             <h2 data-i18n="exportMenuTitle">EXPORTAR JOGO</h2>
+            <p id="export-target-text" style="color: #0aa; font-weight: bold; margin-bottom: 10px;"></p>
             <p data-i18n="exportNameLabel">Título do Jogo:</p>
             <input type="text" id="export-title-input" placeholder="Meu Jogo Incrível" value="ASCII 3D Game">
+            
+            <p data-i18n="exportRenderMode" style="margin-top: 10px;">Modo Gráfico Inicial:</p>
+            <select id="export-render-input">
+                <option value="0">ASCII</option>
+                <option value="1">Real 3D</option>
+                <option value="2">Wireframe</option>
+                <option value="3">RTX</option>
+                <option value="4">Normals</option>
+                <option value="5">Depth</option>
+            </select>
+            
+            <p data-i18n="exportControlMode" style="margin-top: 10px;">Modo de Controle:</p>
+            <select id="export-control-input" onchange="updateExportInstructions()">
+                <option value="fpv_room" data-i18n="ctrlFpvRoom">1ª Pessoa (Preso no Quarto)</option>
+                <option value="fpv_free" data-i18n="ctrlFpvFree">1ª Pessoa (Livre)</option>
+                <option value="orbit" data-i18n="ctrlOrbit">Órbita (Mouse para girar)</option>
+            </select>
+            
+            <label style="margin-top: 10px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" id="export-floor-input" checked>
+                <span data-i18n="exportShowFloor">Mostrar Chão</span>
+            </label>
+
             <p data-i18n="exportInstLabel" style="margin-top: 10px;">Instruções:</p>
             <input type="text" id="export-inst-input" placeholder="WASD para mover..." value="WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render">
+
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button onclick="confirmExportGame()" style="flex: 2;" data-i18n="btnConfirmExport">Baixar HTML</button>
                 <button onclick="closeExportMenu()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
@@ -411,7 +436,17 @@
                 alertNoApiKey: "Por favor, configure sua chave de API Gemini primeiro!",
                 alertGenError: "Erro ao gerar objeto: ",
                 alertCodeError: "Este objeto gerou um código com erro.",
-                emptySpawnList: "Nenhum objeto criado. Crie um no Menu Principal primeiro."
+                emptySpawnList: "Nenhum objeto criado. Crie um no Menu Principal primeiro.",
+                exportTargetScene: "Exportando: Cena Inteira",
+                exportTargetObj: "Exportando Objeto:",
+                exportRenderMode: "Modo Gráfico Inicial:",
+                exportControlMode: "Modo de Controle:",
+                exportShowFloor: "Mostrar Chão",
+                ctrlOrbit: "Órbita (Mouse para girar)",
+                ctrlFpvFree: "1ª Pessoa (Livre)",
+                ctrlFpvRoom: "1ª Pessoa (Preso no Quarto)",
+                instOrbitExport: "Mouse: Clicar+Arrastar rot | Scroll: Zoom | V: Res | M: Modo",
+                instFpvExport: "WASD: Mover | Mouse: Olhar | Q/E: Cima/Baixo | V: Res | M: Modo"
             },
             en: {
                 title: "3D ASCII VOXEL GENERATOR",
@@ -482,7 +517,17 @@
                 alertNoApiKey: "Please setup your Gemini API Key first!",
                 alertGenError: "Error generating object: ",
                 alertCodeError: "This object generated code with errors.",
-                emptySpawnList: "No objects created. Create one in the Main Menu first."
+                emptySpawnList: "No objects created. Create one in the Main Menu first.",
+                exportTargetScene: "Exporting: Entire Scene",
+                exportTargetObj: "Exporting Object:",
+                exportRenderMode: "Initial Graphic Mode:",
+                exportControlMode: "Control Mode:",
+                exportShowFloor: "Show Floor",
+                ctrlOrbit: "Orbit (Mouse to rotate)",
+                ctrlFpvFree: "1st Person (Free)",
+                ctrlFpvRoom: "1st Person (Room Bounded)",
+                instOrbitExport: "Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Mode",
+                instFpvExport: "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Mode"
             },
             es: {
                 title: "GENERADOR VOXEL ASCII 3D",
@@ -553,7 +598,17 @@
                 alertNoApiKey: "¡Por favor, configura tu API Key de Gemini primero!",
                 alertGenError: "Error al generar el objeto: ",
                 alertCodeError: "Este objeto generó código con errores.",
-                emptySpawnList: "No se han creado objetos. Crea uno en el Menú Principal primero."
+                emptySpawnList: "No se han creado objetos. Crea uno en el Menú Principal primero.",
+                exportTargetScene: "Exportando: Escena Entera",
+                exportTargetObj: "Exportando Objeto:",
+                exportRenderMode: "Modo Gráfico Inicial:",
+                exportControlMode: "Modo de Control:",
+                exportShowFloor: "Mostrar Piso",
+                ctrlOrbit: "Órbita (Ratón para rotar)",
+                ctrlFpvFree: "1ª Persona (Libre)",
+                ctrlFpvRoom: "1ª Persona (En Habitación)",
+                instOrbitExport: "Ratón: Clic+Arrastrar rot | Scroll: Zoom | V: Res | M: Modo",
+                instFpvExport: "WASD: Mover | Ratón: Mirar | Q/E: Arriba/Abajo | V: Res | M: Modo"
             },
             ja: {
                 title: "3D ASCII ボクセル ジェネレーター",
@@ -624,7 +679,17 @@
                 alertNoApiKey: "まずGemini APIキーを設定してください！",
                 alertGenError: "オブジェクトの生成中にエラーが発生しました: ",
                 alertCodeError: "このオブジェクトはエラーを含むコードを生成しました。",
-                emptySpawnList: "オブジェクトが作成されていません。まずメインメニューで作成してください。"
+                emptySpawnList: "オブジェクトが作成されていません。まずメインメニューで作成してください。",
+                exportTargetScene: "出力: シーン全体",
+                exportTargetObj: "オブジェクト出力:",
+                exportRenderMode: "初期グラフィックモード:",
+                exportControlMode: "コントロールモード:",
+                exportShowFloor: "床を表示",
+                ctrlOrbit: "オービット（マウスで回転）",
+                ctrlFpvFree: "1人称（フリー）",
+                ctrlFpvRoom: "1人称（部屋に固定）",
+                instOrbitExport: "マウス: ドラッグで回転 | スクロール: ズーム | V: 解像度 | M: モード",
+                instFpvExport: "WASD: 移動 | マウス: 視点 | Q/E: 上下 | V: 解像度 | M: モード"
             }
         };
 
@@ -658,8 +723,7 @@
                 sortSelect.options[0].text = i18n[currentLang].sortDateDesc;
                 sortSelect.options[1].text = i18n[currentLang].sortDateAsc;
                 sortSelect.options[2].text = i18n[currentLang].sortNameAsc;
-                sortSelect.options[3].text = i18n[currentLang].sortNameDesc;
-                sortSelect.options[4].text = i18n[currentLang].sortLastUsed;
+                sortSelect.options[3].text = i18n[currentLang].sortLastUsed;
             }
             
             const filterSelect = document.getElementById('obj-filter');
@@ -901,6 +965,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             <div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 2px; font-size: 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff; flex: 1;">#</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 2px; font-size: 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00; flex: 1;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 2px; font-size: 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33; flex: 1;">HTML</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 2px; font-size: 10px; background: #300; color: #f00; border: 1px solid #f00; flex: 1;">X</button>
                             </div>
                         `;
@@ -917,6 +982,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 5px 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00;">${i18n[currentLang].btnDup}</button>
                                 <button onclick="exportObject(${index}, 'json')" title="JSON" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
                                 <button onclick="exportObject(${index}, 'js')" title="JS" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
+                                <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 5px 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33;">HTML</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
                             </div>
                         `;
@@ -1059,26 +1125,80 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             URL.revokeObjectURL(url);
         }
 
-        function openExportMenu() {
-            if (currentSceneData.length === 0) {
-                alert(i18n[currentLang].alertSceneEmpty);
-                return;
+        let currentExportTarget = 'scene';
+
+        function openExportMenu(target = 'scene', event = null) {
+            if (event) event.stopPropagation();
+            currentExportTarget = target;
+            const targetText = document.getElementById('export-target-text');
+            const controlInput = document.getElementById('export-control-input');
+            const instInput = document.getElementById('export-inst-input');
+            const renderInput = document.getElementById('export-render-input');
+            const titleInput = document.getElementById('export-title-input');
+            
+            if (target === 'scene') {
+                if (currentSceneData.length === 0) {
+                    alert(i18n[currentLang].alertSceneEmpty);
+                    return;
+                }
+                targetText.innerText = (i18n[currentLang].exportTargetScene || "Exportando: Cena Inteira");
+                controlInput.value = 'fpv_room';
+                instInput.value = 'WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render';
+                titleInput.value = "ASCII 3D Game";
+            } else {
+                const obj = voxelObjects[target];
+                targetText.innerText = (i18n[currentLang].exportTargetObj || "Exportando Objeto:") + " " + obj.name;
+                controlInput.value = 'orbit';
+                instInput.value = 'Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Render';
+                titleInput.value = obj.name;
             }
-            pointerLockControls.unlock();
+            renderInput.value = currentRenderMode.toString();
+            updateExportInstructions();
+            
+            if (pointerLockControls.isLocked) pointerLockControls.unlock();
             showPanel('panel-export');
         }
 
+        function updateExportInstructions() {
+            const ctrl = document.getElementById('export-control-input').value;
+            const instInput = document.getElementById('export-inst-input');
+            if (ctrl === 'orbit') {
+                instInput.value = i18n[currentLang].instOrbitExport || "Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Render";
+            } else {
+                instInput.value = i18n[currentLang].instFpvExport || "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render";
+            }
+        }
+
         function closeExportMenu() {
-            showPanel(null);
-            if(currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
+            if (currentExportTarget === 'scene') {
+                showPanel(null);
+                if (currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
+            } else {
+                showPanel('panel-objects');
+            }
         }
 
         function confirmExportGame() {
             const title = document.getElementById('export-title-input').value.trim() || 'ASCII 3D Game';
-            const inst = document.getElementById('export-inst-input').value.trim() || 'WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution';
+            const inst = document.getElementById('export-inst-input').value.trim();
+            const renderModeStr = document.getElementById('export-render-input').value;
+            const controlMode = document.getElementById('export-control-input').value;
+            const showFloor = document.getElementById('export-floor-input').checked;
             
-            const sceneJson = JSON.stringify(currentSceneData);
-            const floorVis = floor.visible;
+            let sceneDataToExport;
+            if (currentExportTarget === 'scene') {
+                sceneDataToExport = currentSceneData;
+            } else {
+                sceneDataToExport = [{
+                    code: voxelObjects[currentExportTarget].code,
+                    position: {x: 0, y: 0, z: 0},
+                    scale: {x: 1, y: 1, z: 1},
+                    rotation: {x: 0, y: 0, z: 0}
+                }];
+            }
+            
+            const sceneJson = JSON.stringify(sceneDataToExport);
+            
             const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1094,6 +1214,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"><\/script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>
 </head>
 <body>
     <div id="ascii-container"></div>
@@ -1106,6 +1227,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     </div>
     <script>
         const sceneData = ${sceneJson};
+        const controlMode = "${controlMode}";
+        const initialRenderMode = ${renderModeStr};
+        
         const scene = new THREE.Scene();
         window.scene = scene;
         scene.background = new THREE.Color(0x000000);
@@ -1133,11 +1257,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let charW = 6, charH = 10;
         let asciiScale = 1.0;
         let currentResLevel = 0;
-        let currentRenderMode = 0;
+        let currentRenderMode = initialRenderMode;
         const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
 
-        function cycleRenderMode() {
-            currentRenderMode = (currentRenderMode + 1) % renderModes.length;
+        function setRenderMode(mode) {
+            currentRenderMode = mode % renderModes.length;
             const canvas = window.renderer.domElement;
             
             if (currentRenderMode === 0) {
@@ -1169,6 +1293,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
             
             setupAsciiGrid();
+        }
+
+        function cycleRenderMode() {
+            setRenderMode(currentRenderMode + 1);
         }
 
         function setResolution(level) {
@@ -1208,6 +1336,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
         setupAsciiGrid();
         window.addEventListener('resize', setupAsciiGrid);
+        
+        // Initial setup
+        setRenderMode(currentRenderMode);
 
         const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
         scene.add(ambientLight);
@@ -1225,12 +1356,31 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         const floor = new THREE.Mesh(new THREE.BoxGeometry(1000, 1, 1000), matFloor);
         floor.position.y = -0.5;
         floor.receiveShadow = true;
-        floor.visible = ${floorVis};
+        floor.visible = ${showFloor};
         scene.add(floor);
 
-        const controls = new THREE.PointerLockControls(camera, document.body);
-        scene.add(controls.getObject());
-        controls.getObject().position.set(0, 5, 10);
+        let controls;
+        if (controlMode === 'orbit') {
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            camera.position.set(10, 10, 15);
+            controls.target.set(0, 0, 0);
+            
+            const overlay = document.getElementById('overlay');
+            overlay.addEventListener('click', () => {
+                overlay.style.display = 'none';
+            });
+        } else {
+            controls = new THREE.PointerLockControls(camera, document.body);
+            scene.add(controls.getObject());
+            controls.getObject().position.set(0, 5, 10);
+            
+            const overlay = document.getElementById('overlay');
+            overlay.addEventListener('click', () => controls.lock());
+            controls.addEventListener('lock', () => overlay.style.display = 'none');
+            controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+        }
 
         sceneData.forEach(item => {
             window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
@@ -1254,15 +1404,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         });
         window.spawnTargetPosition = null;
 
-        const overlay = document.getElementById('overlay');
-        overlay.addEventListener('click', () => controls.lock());
-        controls.addEventListener('lock', () => overlay.style.display = 'none');
-        controls.addEventListener('unlock', () => overlay.style.display = 'flex');
-
         let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyV') cycleResolution();
             if (e.code === 'KeyM') cycleRenderMode();
+            if (controlMode === 'orbit') return;
             switch(e.code) {
                 case 'ArrowUp': case 'KeyW': moveF=true; break;
                 case 'ArrowLeft': case 'KeyA': moveL=true; break;
@@ -1273,6 +1419,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         });
         document.addEventListener('keyup', (e) => {
+            if (controlMode === 'orbit') return;
             switch(e.code) {
                 case 'ArrowUp': case 'KeyW': moveF=false; break;
                 case 'ArrowLeft': case 'KeyA': moveL=false; break;
@@ -1292,7 +1439,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
             
-            if (controls.isLocked) {
+            if (controlMode === 'orbit') {
+                controls.update();
+            } else if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 velocity.y -= velocity.y * 10.0 * delta;
@@ -1306,6 +1455,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
                 controls.getObject().position.y -= velocity.y * delta;
+                
+                if (controlMode === 'fpv_room') {
+                    const pos = controls.getObject().position;
+                    const limit = 28.5; // (60 / 2 - 1.5)
+                    if (pos.x > limit) pos.x = limit;
+                    if (pos.x < -limit) pos.x = -limit;
+                    if (pos.z > limit) pos.z = limit;
+                    if (pos.z < -limit) pos.z = -limit;
+                    if (pos.y < 1) pos.y = 1;
+                    if (pos.y > 20) pos.y = 20;
+                }
             }
             prevTime = time;
 
@@ -1334,7 +1494,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "jogo_ascii_3d.html";
+            a.download = (title.toLowerCase().replace(/[^a-z0-9]/g, '_') || "jogo_ascii") + ".html";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
