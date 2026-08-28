@@ -180,10 +180,20 @@
         ::-webkit-scrollbar-thumb {
             background: #0f0; 
         }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .refreshing-anim {
+            animation: blink 1s infinite;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -214,7 +224,7 @@
         </div>
 
         <div id="panel-menu" class="panel active">
-            <h1 data-i18n="title">GERADOR VOXEL ASCII 3D</h1>
+            <h1 data-i18n="title">DREAM MACHINE</h1>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button onclick="showPanel('panel-create')" style="flex: 2;" data-i18n="btnCreate">Criar Novo</button>
@@ -222,6 +232,8 @@
             </div>
             
             <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;" data-i18n="btnMyObjs">Meus Objetos</button>
+
+            <button onclick="showPanel('panel-community')" style="margin-bottom: 15px; background: #660099; border-color: #ff55ff; color: #ff55ff;" data-i18n="btnCommunity">Galeria da Comunidade</button>
 
             <button onclick="enterRoom()" style="margin-bottom: 15px;" data-i18n="btnCreator">Entrar (Modo Criador)</button>
             
@@ -269,12 +281,30 @@
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
         </div>
 
+        <div id="panel-community" class="panel" style="max-width: 800px; width: 95%;">
+            <h2 data-i18n="btnCommunity">Galeria da Comunidade</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                <input type="text" id="comm-search" data-i18n="searchPlaceholder" placeholder="Buscar / Search..." style="flex: 2; padding: 5px; min-width: 150px;" oninput="renderCommunityList()">
+                <button onclick="loadCommunityGallery()" style="padding: 5px 10px; font-family: monospace;" data-i18n="btnRefresh">[ Atualizar / Refresh ]</button>
+            </div>
+
+            <div id="community-list" style="max-height: 400px; overflow-y: auto;"></div>
+            <div id="comm-loading-msg" class="refreshing-anim" data-i18n="refreshingMsg" style="display:none; text-align:center; margin: 10px 0; color: #0f0;">[ CARREGANDO... ]</div>
+            
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
+        </div>
+
         <div id="panel-api" class="panel">
             <h2 data-i18n="apiConfigTitle">Configuração da API</h2>
             <p data-i18n="apiConfigDesc">Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
             <input type="password" id="api-key-input" placeholder="AIzaSy...">
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveKey">Salvar Chave</button>
+            <div style="margin-top: 15px;">
+                <label data-i18n="authorNameLabel" style="display:block; margin-bottom:5px; font-size: 14px;">Seu Nome (Para a Galeria)</label>
+                <input type="text" id="author-name-input" data-i18n="authorNamePlaceholder" placeholder="Ex: Joãozinho">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveConfig">Salvar Configurações</button>
                 <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnDelKey">Deletar Chave</button>
             </div>
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
@@ -307,35 +337,10 @@
 
         <div id="panel-export" class="panel">
             <h2 data-i18n="exportMenuTitle">EXPORTAR JOGO</h2>
-            <p id="export-target-text" style="color: #0aa; font-weight: bold; margin-bottom: 10px;"></p>
             <p data-i18n="exportNameLabel">Título do Jogo:</p>
             <input type="text" id="export-title-input" placeholder="Meu Jogo Incrível" value="ASCII 3D Game">
-            
-            <p data-i18n="exportRenderMode" style="margin-top: 10px;">Modo Gráfico Inicial:</p>
-            <select id="export-render-input">
-                <option value="0">ASCII</option>
-                <option value="1">Real 3D</option>
-                <option value="2">Wireframe</option>
-                <option value="3">RTX</option>
-                <option value="4">Normals</option>
-                <option value="5">Depth</option>
-            </select>
-            
-            <p data-i18n="exportControlMode" style="margin-top: 10px;">Modo de Controle:</p>
-            <select id="export-control-input" onchange="updateExportInstructions()">
-                <option value="fpv_room" data-i18n="ctrlFpvRoom">1ª Pessoa (Preso no Quarto)</option>
-                <option value="fpv_free" data-i18n="ctrlFpvFree">1ª Pessoa (Livre)</option>
-                <option value="orbit" data-i18n="ctrlOrbit">Órbita (Mouse para girar)</option>
-            </select>
-            
-            <label style="margin-top: 10px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <input type="checkbox" id="export-floor-input" checked>
-                <span data-i18n="exportShowFloor">Mostrar Chão</span>
-            </label>
-
             <p data-i18n="exportInstLabel" style="margin-top: 10px;">Instruções:</p>
             <input type="text" id="export-inst-input" placeholder="WASD para mover..." value="WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render">
-
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button onclick="confirmExportGame()" style="flex: 2;" data-i18n="btnConfirmExport">Baixar HTML</button>
                 <button onclick="closeExportMenu()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnCancel">Cancelar</button>
@@ -368,7 +373,19 @@
         
         const i18n = {
             pt: {
-                title: "GERADOR VOXEL ASCII 3D",
+                title: "DREAM MACHINE",
+                btnCommunity: "Galeria da Comunidade",
+                btnRefresh: "[ Atualizar / Refresh ]",
+                btnPublish: "🌐 Publicar",
+                btnPublished: "✅ Publicado",
+                btnDownload: "💾 Salvar Localmente",
+                alertPublished: "Publicado com sucesso!",
+                alertDownloaded: "Salvo com sucesso nos seus objetos!",
+                btnRedownload: "Baixar Novamente",
+                authorNameLabel: "Seu Nome (Para a Galeria)",
+                authorNamePlaceholder: "Ex: Joãozinho",
+                byAuthor: "por",
+                btnSaveConfig: "Salvar Configurações",
                 btnCreate: "Criar Novo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Meus Objetos",
@@ -423,6 +440,7 @@
                 promptPlaceholder: "Ex: Uma espada mágica brilhante...",
                 btnGenView: "Gerar e Visualizar",
                 loadingMsg: "[ GERANDO VIA IA... POR FAVOR AGUARDE ]",
+                refreshingMsg: "[ ATUALIZANDO GALERIA... ]",
                 btnCancelBack: "Cancelar e Voltar",
                 spawnMenuTitle: "Escolha um objeto para spawnar",
                 alertKeySaved: "Chave salva com sucesso!",
@@ -436,20 +454,22 @@
                 alertNoApiKey: "Por favor, configure sua chave de API Gemini primeiro!",
                 alertGenError: "Erro ao gerar objeto: ",
                 alertCodeError: "Este objeto gerou um código com erro.",
-                emptySpawnList: "Nenhum objeto criado. Crie um no Menu Principal primeiro.",
-                exportTargetScene: "Exportando: Cena Inteira",
-                exportTargetObj: "Exportando Objeto:",
-                exportRenderMode: "Modo Gráfico Inicial:",
-                exportControlMode: "Modo de Controle:",
-                exportShowFloor: "Mostrar Chão",
-                ctrlOrbit: "Órbita (Mouse para girar)",
-                ctrlFpvFree: "1ª Pessoa (Livre)",
-                ctrlFpvRoom: "1ª Pessoa (Preso no Quarto)",
-                instOrbitExport: "Mouse: Clicar+Arrastar rot | Scroll: Zoom | V: Res | M: Modo",
-                instFpvExport: "WASD: Mover | Mouse: Olhar | Q/E: Cima/Baixo | V: Res | M: Modo"
+                emptySpawnList: "Nenhum objeto criado. Crie um no Menu Principal primeiro."
             },
             en: {
-                title: "3D ASCII VOXEL GENERATOR",
+                title: "DREAM MACHINE",
+                btnCommunity: "Community Gallery",
+                btnRefresh: "[ Refresh ]",
+                btnPublish: "🌐 Publish",
+                btnPublished: "✅ Published",
+                btnDownload: "💾 Save Locally",
+                alertPublished: "Published successfully!",
+                alertDownloaded: "Saved successfully to your objects!",
+                btnRedownload: "Redownload",
+                authorNameLabel: "Your Name (For Gallery)",
+                authorNamePlaceholder: "Ex: Player1",
+                byAuthor: "by",
+                btnSaveConfig: "Save Settings",
                 btnCreate: "Create New",
                 btnImport: "Import Object",
                 btnMyObjs: "My Objects",
@@ -504,6 +524,7 @@
                 promptPlaceholder: "Ex: A glowing magic sword...",
                 btnGenView: "Generate and View",
                 loadingMsg: "[ GENERATING VIA AI... PLEASE WAIT ]",
+                refreshingMsg: "[ REFRESHING GALLERY... ]",
                 btnCancelBack: "Cancel and Back",
                 spawnMenuTitle: "Choose an object to spawn",
                 alertKeySaved: "Key saved successfully!",
@@ -517,20 +538,22 @@
                 alertNoApiKey: "Please setup your Gemini API Key first!",
                 alertGenError: "Error generating object: ",
                 alertCodeError: "This object generated code with errors.",
-                emptySpawnList: "No objects created. Create one in the Main Menu first.",
-                exportTargetScene: "Exporting: Entire Scene",
-                exportTargetObj: "Exporting Object:",
-                exportRenderMode: "Initial Graphic Mode:",
-                exportControlMode: "Control Mode:",
-                exportShowFloor: "Show Floor",
-                ctrlOrbit: "Orbit (Mouse to rotate)",
-                ctrlFpvFree: "1st Person (Free)",
-                ctrlFpvRoom: "1st Person (Room Bounded)",
-                instOrbitExport: "Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Mode",
-                instFpvExport: "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Mode"
+                emptySpawnList: "No objects created. Create one in the Main Menu first."
             },
             es: {
-                title: "GENERADOR VOXEL ASCII 3D",
+                title: "DREAM MACHINE",
+                btnCommunity: "Galería de la Comunidad",
+                btnRefresh: "[ Actualizar ]",
+                btnPublish: "🌐 Publicar",
+                btnPublished: "✅ Publicado",
+                btnDownload: "💾 Guardar Localmente",
+                alertPublished: "¡Publicado con éxito!",
+                alertDownloaded: "¡Guardado con éxito en tus objetos!",
+                btnRedownload: "Volver a descargar",
+                authorNameLabel: "Tu nombre (Para la galería)",
+                authorNamePlaceholder: "Ej: Jugador1",
+                byAuthor: "por",
+                btnSaveConfig: "Guardar Configuración",
                 btnCreate: "Crear Nuevo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Mis Objetos",
@@ -585,6 +608,7 @@
                 promptPlaceholder: "Ej: Una espada mágica brillante...",
                 btnGenView: "Generar y Ver",
                 loadingMsg: "[ GENERANDO VÍA IA... POR FAVOR ESPERA ]",
+                refreshingMsg: "[ ACTUALIZANDO GALERÍA... ]",
                 btnCancelBack: "Cancelar y Volver",
                 spawnMenuTitle: "Elige un objeto para spawnear",
                 alertKeySaved: "¡Clave guardada con éxito!",
@@ -598,20 +622,22 @@
                 alertNoApiKey: "¡Por favor, configura tu API Key de Gemini primero!",
                 alertGenError: "Error al generar el objeto: ",
                 alertCodeError: "Este objeto generó código con errores.",
-                emptySpawnList: "No se han creado objetos. Crea uno en el Menú Principal primero.",
-                exportTargetScene: "Exportando: Escena Entera",
-                exportTargetObj: "Exportando Objeto:",
-                exportRenderMode: "Modo Gráfico Inicial:",
-                exportControlMode: "Modo de Control:",
-                exportShowFloor: "Mostrar Piso",
-                ctrlOrbit: "Órbita (Ratón para rotar)",
-                ctrlFpvFree: "1ª Persona (Libre)",
-                ctrlFpvRoom: "1ª Persona (En Habitación)",
-                instOrbitExport: "Ratón: Clic+Arrastrar rot | Scroll: Zoom | V: Res | M: Modo",
-                instFpvExport: "WASD: Mover | Ratón: Mirar | Q/E: Arriba/Abajo | V: Res | M: Modo"
+                emptySpawnList: "No se han creado objetos. Crea uno en el Menú Principal primero."
             },
             ja: {
-                title: "3D ASCII ボクセル ジェネレーター",
+                title: "DREAM MACHINE",
+                btnCommunity: "コミュニティギャラリー",
+                btnRefresh: "[ 更新 ]",
+                btnPublish: "🌐 公開",
+                btnPublished: "✅ 公開済み",
+                btnDownload: "💾 ローカルに保存",
+                alertPublished: "正常に公開されました！",
+                alertDownloaded: "オブジェクトに正常に保存されました！",
+                btnRedownload: "再ダウンロード",
+                authorNameLabel: "あなたの名前（ギャラリー用）",
+                authorNamePlaceholder: "例：プレイヤー1",
+                byAuthor: "作成者:",
+                btnSaveConfig: "設定を保存",
                 btnCreate: "新規作成",
                 btnImport: "インポート",
                 btnMyObjs: "マイオブジェクト",
@@ -666,6 +692,7 @@
                 promptPlaceholder: "例: 光る魔法の剣...",
                 btnGenView: "生成して表示",
                 loadingMsg: "[ AIで生成中... しばらくお待ちください ]",
+                refreshingMsg: "[ ギャラリーを更新中... ]",
                 btnCancelBack: "キャンセルして戻る",
                 spawnMenuTitle: "スポーンするオブジェクトを選択",
                 alertKeySaved: "キーが正常に保存されました！",
@@ -679,17 +706,7 @@
                 alertNoApiKey: "まずGemini APIキーを設定してください！",
                 alertGenError: "オブジェクトの生成中にエラーが発生しました: ",
                 alertCodeError: "このオブジェクトはエラーを含むコードを生成しました。",
-                emptySpawnList: "オブジェクトが作成されていません。まずメインメニューで作成してください。",
-                exportTargetScene: "出力: シーン全体",
-                exportTargetObj: "オブジェクト出力:",
-                exportRenderMode: "初期グラフィックモード:",
-                exportControlMode: "コントロールモード:",
-                exportShowFloor: "床を表示",
-                ctrlOrbit: "オービット（マウスで回転）",
-                ctrlFpvFree: "1人称（フリー）",
-                ctrlFpvRoom: "1人称（部屋に固定）",
-                instOrbitExport: "マウス: ドラッグで回転 | スクロール: ズーム | V: 解像度 | M: モード",
-                instFpvExport: "WASD: 移動 | マウス: 視点 | Q/E: 上下 | V: 解像度 | M: モード"
+                emptySpawnList: "オブジェクトが作成されていません。まずメインメニューで作成してください。"
             }
         };
 
@@ -723,7 +740,8 @@
                 sortSelect.options[0].text = i18n[currentLang].sortDateDesc;
                 sortSelect.options[1].text = i18n[currentLang].sortDateAsc;
                 sortSelect.options[2].text = i18n[currentLang].sortNameAsc;
-                sortSelect.options[3].text = i18n[currentLang].sortLastUsed;
+                sortSelect.options[3].text = i18n[currentLang].sortNameDesc;
+                sortSelect.options[4].text = i18n[currentLang].sortLastUsed;
             }
             
             const filterSelect = document.getElementById('obj-filter');
@@ -774,6 +792,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if(panelId === 'panel-objects') {
                 renderObjectsList();
             }
+            if(panelId === 'panel-community') {
+                loadCommunityGallery();
+            }
             const langContainer = document.getElementById('lang-container');
             if (langContainer) {
                 langContainer.style.display = panelId === 'panel-menu' ? 'block' : 'none';
@@ -782,11 +803,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         function saveApiKey() {
             const key = document.getElementById('api-key-input').value.trim();
+            const authorName = document.getElementById('author-name-input').value.trim();
             if(key) {
                 localStorage.setItem('gemini_api_key', key);
-                alert(i18n[currentLang].alertKeySaved);
-                showPanel('panel-menu');
             }
+            if(authorName) {
+                localStorage.setItem('author_name', authorName);
+            } else {
+                localStorage.removeItem('author_name');
+            }
+            alert(i18n[currentLang].alertKeySaved);
+            showPanel('panel-menu');
         }
         
         function deleteApiKey() {
@@ -796,6 +823,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || "";
+        document.getElementById('author-name-input').value = localStorage.getItem('author_name') || "";
 
         let objViewMode = 'list';
 
@@ -965,7 +993,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             <div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 2px; font-size: 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff; flex: 1;">#</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 2px; font-size: 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00; flex: 1;">${i18n[currentLang].btnDup}</button>
-                                <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 2px; font-size: 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33; flex: 1;">HTML</button>
+                                ${ communityObjects.some(c => c.code === obj.code) ? `<button disabled title="${i18n[currentLang].btnPublished}" style="padding: 2px; font-size: 10px; background: #222; color: #888; border: 1px solid #555; flex: 1; cursor: not-allowed;">${i18n[currentLang].btnPublished}</button>` : `<button onclick="publishObject(${index}, this)" title="${i18n[currentLang].btnPublish}" style="padding: 2px; font-size: 10px; background: #660099; color: #ff55ff; border: 1px solid #ff55ff; flex: 1;">${i18n[currentLang].btnPublish}</button>` }
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 2px; font-size: 10px; background: #300; color: #f00; border: 1px solid #f00; flex: 1;">X</button>
                             </div>
                         `;
@@ -980,9 +1008,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                 <button onclick="renameObject(${index}, event)" title="${i18n[currentLang].btnRename}" style="padding: 5px 10px; background: #222; border: 1px solid #555;">${i18n[currentLang].btnRename}</button>
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">${i18n[currentLang].btnTags}</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 5px 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00;">${i18n[currentLang].btnDup}</button>
+                                ${ communityObjects.some(c => c.code === obj.code) ? `<button disabled title="${i18n[currentLang].btnPublished}" style="padding: 5px 10px; background: #222; color: #888; border: 1px solid #555; cursor: not-allowed;">${i18n[currentLang].btnPublished}</button>` : `<button onclick="publishObject(${index}, this)" title="${i18n[currentLang].btnPublish}" style="padding: 5px 10px; background: #660099; color: #ff55ff; border: 1px solid #ff55ff;">${i18n[currentLang].btnPublish}</button>` }
                                 <button onclick="exportObject(${index}, 'json')" title="JSON" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
                                 <button onclick="exportObject(${index}, 'js')" title="JS" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
-                                <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 5px 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33;">HTML</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 5px 10px; background: #300; color: #f00; border: 1px solid #f00;">X</button>
                             </div>
                         `;
@@ -1028,6 +1056,200 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 voxelObjects.splice(index, 1);
                 localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
                 renderObjectsList();
+            }
+        }
+
+        // ==========================================
+        // FIREBASE & COMMUNITY LOGIC
+        // ==========================================
+        const firebaseConfig = {
+          projectId: "gothic-icon-13bk6",
+          appId: "1:969900205722:web:9de66b9c85491a75356123",
+          apiKey: "AIzaSyA3NOfJ2vZWaDWUDg5I7LRg2-kziIzn_HI",
+          authDomain: "gothic-icon-13bk6.firebaseapp.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let communityObjects = [];
+
+        async function publishObject(index, btnElement) {
+            const obj = voxelObjects[index];
+            if (!obj.code || !obj.name) return;
+            
+            let originalText = btnElement ? btnElement.innerText : "";
+            if (btnElement) {
+                btnElement.disabled = true;
+                btnElement.innerText = "⏳...";
+                btnElement.style.opacity = "0.7";
+            }
+            
+            try {
+                // Ensure only game-created objects structure are uploaded
+                const authorName = localStorage.getItem('author_name') || "";
+                const dataToUpload = {
+                    name: obj.name,
+                    code: obj.code,
+                    thumbnail: obj.thumbnail || "",
+                    tags: obj.tags || [],
+                    author: authorName,
+                    createdAt: Date.now()
+                };
+                
+                // Check local cache for duplicates to avoid Firestore index limits on large code strings
+                const isDuplicate = communityObjects.some(c => c.code === obj.code);
+                if (isDuplicate) {
+                    alert(currentLang === "pt" ? "Este objeto (com este exato código) já existe na galeria!" : "This object (with this exact code) already exists in the gallery!");
+                    if (btnElement) {
+                        btnElement.disabled = true;
+                        btnElement.innerText = i18n[currentLang].btnPublished;
+                        btnElement.style.background = "#222";
+                        btnElement.style.color = "#888";
+                        btnElement.style.borderColor = "#555";
+                        btnElement.style.cursor = "not-allowed";
+                    }
+                    return;
+                }
+                
+                await db.collection("community_objects").add(dataToUpload);
+                
+                if (btnElement) {
+                    btnElement.innerText = i18n[currentLang].btnPublished;
+                    btnElement.style.background = "#222";
+                    btnElement.style.color = "#888";
+                    btnElement.style.borderColor = "#555";
+                    btnElement.style.cursor = "not-allowed";
+                }
+                alert(i18n[currentLang].alertPublished);
+            } catch (err) {
+                console.error("Erro ao publicar:", err);
+                alert("Error: " + err.message);
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerText = originalText;
+                    btnElement.style.opacity = "1";
+                }
+            }
+        }
+
+
+        let communityGalleryListener = null;
+        function loadCommunityGallery() {
+            const listDiv = document.getElementById('community-list');
+            const loadingMsg = document.getElementById('comm-loading-msg');
+            
+            if (communityObjects.length === 0) {
+                listDiv.innerHTML = '';
+                loadingMsg.style.display = 'block';
+            } else {
+                renderCommunityList();
+                loadingMsg.style.display = 'block';
+            }
+
+            if (!communityGalleryListener) {
+                communityGalleryListener = db.collection("community_objects")
+                    .orderBy("createdAt", "desc")
+                    .limit(50)
+                    .onSnapshot(snapshot => {
+                        communityObjects = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            data.id = doc.id;
+                            communityObjects.push(data);
+                        });
+                        renderCommunityList();
+                        loadingMsg.style.display = 'none';
+                    }, err => {
+                        console.error("Erro ao carregar galeria da comunidade:", err);
+                        if (communityObjects.length === 0) {
+                            listDiv.innerHTML = '<p style="text-align:center; color:red;">Erro ao carregar.</p>';
+                        }
+                        loadingMsg.style.display = 'none';
+                    });
+            } else {
+                setTimeout(() => { loadingMsg.style.display = 'none'; }, 500);
+            }
+        }
+
+        function renderCommunityList() {
+            const listDiv = document.getElementById('community-list');
+            if(!listDiv) return;
+            listDiv.innerHTML = '';
+            
+            const searchInput = document.getElementById('comm-search');
+            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+
+            let filtered = communityObjects.filter(o => {
+                if (searchQuery && !o.name.toLowerCase().includes(searchQuery) && !(o.tags && o.tags.join(' ').toLowerCase().includes(searchQuery))) return false;
+                return true;
+            });
+
+            if(filtered.length === 0) {
+                listDiv.style.display = 'block';
+                listDiv.innerHTML = `<p style="text-align:center; color:#555;">${i18n[currentLang].emptyGallery}</p>`;
+            } else {
+                listDiv.style.display = 'grid';
+                listDiv.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+                listDiv.style.gap = '15px';
+                
+                filtered.forEach((obj, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.style.flexDirection = 'column';
+                    item.style.alignItems = 'stretch';
+                    item.style.position = 'relative';
+                    item.style.height = '200px';
+                    item.style.padding = '5px';
+                    
+                    const tagsHtml = (obj.tags || []).slice(0,2).map(t => `<span style="background:#0f0; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; display:inline-block; margin-right:2px; margin-top:2px;">${t}</span>`).join('');
+                    const thumbHtml = obj.thumbnail ? `<pre style="font-size: 3px; line-height: 3px; overflow: hidden; pointer-events: none; opacity: 0.8; margin: 0; font-family: monospace; text-align: center;">${obj.thumbnail}</pre>` : `<span style="font-size: 30px; opacity: 0.5;">[ OBJ ]</span>`;
+                    
+                    // Note: We escape string for onclick to prevent issues
+                    const originalIndex = communityObjects.indexOf(obj);
+                    
+                    const isDownloaded = voxelObjects.some(vo => vo.community_id === obj.id || vo.code === obj.code);
+                    const btnText = isDownloaded ? i18n[currentLang].btnRedownload : i18n[currentLang].btnDownload;
+                    const authorHtml = obj.author ? `<div style="font-size:10px; color:#aaa; margin-bottom: 2px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${obj.author}">${i18n[currentLang].byAuthor} ${obj.author}</div>` : '';
+                    
+                    item.innerHTML = `
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,20,0,0.8); margin-bottom: 5px; border: 1px dashed #0f0; position: relative; overflow: hidden;">
+                            ${thumbHtml}
+                            <div style="position: absolute; bottom: 2px; left: 2px;">${tagsHtml}</div>
+                        </div>
+                        <div class="list-item-title" style="text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; margin-bottom: 2px;" title="${obj.name}">${obj.name}</div>
+                        ${authorHtml}
+                        
+                        <div style="display: flex; gap: 2px; justify-content: center;">
+                            <button onclick="downloadFromCommunity(${originalIndex})" title="${btnText}" style="padding: 5px; font-size: 12px; background: ${isDownloaded ? '#222' : '#660099'}; color: ${isDownloaded ? '#aaa' : '#ff55ff'}; border: 1px solid ${isDownloaded ? '#555' : '#ff55ff'}; flex: 1;">${btnText}</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(item);
+                });
+            }
+        }
+
+        function downloadFromCommunity(index) {
+            try {
+                const obj = communityObjects[index];
+                if (!obj) return;
+                const newObj = {
+                    id: 'obj_' + Date.now(),
+                    community_id: obj.id,
+                    name: obj.name,
+                    code: obj.code,
+                    thumbnail: obj.thumbnail || "",
+                    tags: obj.tags || [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    lastUsedAt: Date.now(),
+                    favorite: false
+                };
+                voxelObjects.unshift(newObj);
+                localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+                alert(i18n[currentLang].alertDownloaded);
+                renderCommunityList();
+            } catch(e) {
+                console.error("Error downloading", e);
             }
         }
 
@@ -1125,80 +1347,26 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             URL.revokeObjectURL(url);
         }
 
-        let currentExportTarget = 'scene';
-
-        function openExportMenu(target = 'scene', event = null) {
-            if (event) event.stopPropagation();
-            currentExportTarget = target;
-            const targetText = document.getElementById('export-target-text');
-            const controlInput = document.getElementById('export-control-input');
-            const instInput = document.getElementById('export-inst-input');
-            const renderInput = document.getElementById('export-render-input');
-            const titleInput = document.getElementById('export-title-input');
-            
-            if (target === 'scene') {
-                if (currentSceneData.length === 0) {
-                    alert(i18n[currentLang].alertSceneEmpty);
-                    return;
-                }
-                targetText.innerText = (i18n[currentLang].exportTargetScene || "Exportando: Cena Inteira");
-                controlInput.value = 'fpv_room';
-                instInput.value = 'WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render';
-                titleInput.value = "ASCII 3D Game";
-            } else {
-                const obj = voxelObjects[target];
-                targetText.innerText = (i18n[currentLang].exportTargetObj || "Exportando Objeto:") + " " + obj.name;
-                controlInput.value = 'orbit';
-                instInput.value = 'Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Render';
-                titleInput.value = obj.name;
+        function openExportMenu() {
+            if (currentSceneData.length === 0) {
+                alert(i18n[currentLang].alertSceneEmpty);
+                return;
             }
-            renderInput.value = currentRenderMode.toString();
-            updateExportInstructions();
-            
-            if (pointerLockControls.isLocked) pointerLockControls.unlock();
+            pointerLockControls.unlock();
             showPanel('panel-export');
         }
 
-        function updateExportInstructions() {
-            const ctrl = document.getElementById('export-control-input').value;
-            const instInput = document.getElementById('export-inst-input');
-            if (ctrl === 'orbit') {
-                instInput.value = i18n[currentLang].instOrbitExport || "Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Render";
-            } else {
-                instInput.value = i18n[currentLang].instFpvExport || "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Render";
-            }
-        }
-
         function closeExportMenu() {
-            if (currentExportTarget === 'scene') {
-                showPanel(null);
-                if (currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
-            } else {
-                showPanel('panel-objects');
-            }
+            showPanel(null);
+            if(currentMode === 'room' || currentMode === 'free_fpv') pointerLockControls.lock();
         }
 
         function confirmExportGame() {
             const title = document.getElementById('export-title-input').value.trim() || 'ASCII 3D Game';
-            const inst = document.getElementById('export-inst-input').value.trim();
-            const renderModeStr = document.getElementById('export-render-input').value;
-            const controlMode = document.getElementById('export-control-input').value;
-            const showFloor = document.getElementById('export-floor-input').checked;
+            const inst = document.getElementById('export-inst-input').value.trim() || 'WASD: Move | Mouse: Look | Q/E: Up/Down | V: Change Resolution';
             
-            let sceneDataToExport;
-            if (currentExportTarget === 'scene') {
-                sceneDataToExport = currentSceneData;
-            } else {
-                sceneDataToExport = [{
-                    code: voxelObjects[currentExportTarget].code,
-                    position: {x: 0, y: 0, z: 0},
-                    scale: {x: 1, y: 1, z: 1},
-                    rotation: {x: 0, y: 0, z: 0}
-                }];
-            }
-            
-            const sceneJson = JSON.stringify(sceneDataToExport);
-            
+            const sceneJson = JSON.stringify(currentSceneData);
+            const floorVis = floor.visible;
             const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1214,7 +1382,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"><\/script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"><\/script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"><\/script>
 </head>
 <body>
     <div id="ascii-container"></div>
@@ -1227,9 +1396,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
     </div>
     <script>
         const sceneData = ${sceneJson};
-        const controlMode = "${controlMode}";
-        const initialRenderMode = ${renderModeStr};
-        
         const scene = new THREE.Scene();
         window.scene = scene;
         scene.background = new THREE.Color(0x000000);
@@ -1257,11 +1423,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let charW = 6, charH = 10;
         let asciiScale = 1.0;
         let currentResLevel = 0;
-        let currentRenderMode = initialRenderMode;
+        let currentRenderMode = 0;
         const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
 
-        function setRenderMode(mode) {
-            currentRenderMode = mode % renderModes.length;
+        function cycleRenderMode() {
+            currentRenderMode = (currentRenderMode + 1) % renderModes.length;
             const canvas = window.renderer.domElement;
             
             if (currentRenderMode === 0) {
@@ -1293,10 +1459,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
             
             setupAsciiGrid();
-        }
-
-        function cycleRenderMode() {
-            setRenderMode(currentRenderMode + 1);
         }
 
         function setResolution(level) {
@@ -1336,9 +1498,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
         setupAsciiGrid();
         window.addEventListener('resize', setupAsciiGrid);
-        
-        // Initial setup
-        setRenderMode(currentRenderMode);
 
         const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
         scene.add(ambientLight);
@@ -1356,31 +1515,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         const floor = new THREE.Mesh(new THREE.BoxGeometry(1000, 1, 1000), matFloor);
         floor.position.y = -0.5;
         floor.receiveShadow = true;
-        floor.visible = ${showFloor};
+        floor.visible = ${floorVis};
         scene.add(floor);
 
-        let controls;
-        if (controlMode === 'orbit') {
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            camera.position.set(10, 10, 15);
-            controls.target.set(0, 0, 0);
-            
-            const overlay = document.getElementById('overlay');
-            overlay.addEventListener('click', () => {
-                overlay.style.display = 'none';
-            });
-        } else {
-            controls = new THREE.PointerLockControls(camera, document.body);
-            scene.add(controls.getObject());
-            controls.getObject().position.set(0, 5, 10);
-            
-            const overlay = document.getElementById('overlay');
-            overlay.addEventListener('click', () => controls.lock());
-            controls.addEventListener('lock', () => overlay.style.display = 'none');
-            controls.addEventListener('unlock', () => overlay.style.display = 'flex');
-        }
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+        controls.getObject().position.set(0, 5, 10);
 
         sceneData.forEach(item => {
             window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
@@ -1404,11 +1544,15 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         });
         window.spawnTargetPosition = null;
 
+        const overlay = document.getElementById('overlay');
+        overlay.addEventListener('click', () => controls.lock());
+        controls.addEventListener('lock', () => overlay.style.display = 'none');
+        controls.addEventListener('unlock', () => overlay.style.display = 'flex');
+
         let moveF=false, moveB=false, moveL=false, moveR=false, moveU=false, moveD=false;
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyV') cycleResolution();
             if (e.code === 'KeyM') cycleRenderMode();
-            if (controlMode === 'orbit') return;
             switch(e.code) {
                 case 'ArrowUp': case 'KeyW': moveF=true; break;
                 case 'ArrowLeft': case 'KeyA': moveL=true; break;
@@ -1419,7 +1563,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         });
         document.addEventListener('keyup', (e) => {
-            if (controlMode === 'orbit') return;
             switch(e.code) {
                 case 'ArrowUp': case 'KeyW': moveF=false; break;
                 case 'ArrowLeft': case 'KeyA': moveL=false; break;
@@ -1439,9 +1582,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
             
-            if (controlMode === 'orbit') {
-                controls.update();
-            } else if (controls.isLocked) {
+            if (controls.isLocked) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
                 velocity.y -= velocity.y * 10.0 * delta;
@@ -1455,17 +1596,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
                 controls.getObject().position.y -= velocity.y * delta;
-                
-                if (controlMode === 'fpv_room') {
-                    const pos = controls.getObject().position;
-                    const limit = 28.5; // (60 / 2 - 1.5)
-                    if (pos.x > limit) pos.x = limit;
-                    if (pos.x < -limit) pos.x = -limit;
-                    if (pos.z > limit) pos.z = limit;
-                    if (pos.z < -limit) pos.z = -limit;
-                    if (pos.y < 1) pos.y = 1;
-                    if (pos.y > 20) pos.y = 20;
-                }
             }
             prevTime = time;
 
@@ -1494,7 +1624,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = (title.toLowerCase().replace(/[^a-z0-9]/g, '_') || "jogo_ascii") + ".html";
+            a.download = "jogo_ascii_3d.html";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
