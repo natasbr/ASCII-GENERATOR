@@ -184,6 +184,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -222,6 +224,8 @@
             </div>
             
             <button onclick="showPanel('panel-objects')" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;" data-i18n="btnMyObjs">Meus Objetos</button>
+
+            <button onclick="showPanel('panel-gallery')" style="margin-bottom: 15px; background: #004488; border-color: #00aaff; color: #00aaff;" data-i18n="btnGallery">🌐 Galeria Online</button>
 
             <button onclick="enterRoom()" style="margin-bottom: 15px;" data-i18n="btnCreator">Entrar (Modo Criador)</button>
             
@@ -266,6 +270,25 @@
 
             <div id="objects-list" style="max-height: 400px; overflow-y: auto;"></div>
             
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
+        </div>
+
+        <div id="panel-gallery" class="panel" style="max-width: 800px; width: 95%;">
+            <h2 data-i18n="galleryTitle">🌐 Galeria Online (Comunidade)</h2>
+            <p id="gallery-config-warning" style="display:none; color:#ff5555; font-size:12px;" data-i18n="galleryConfigMissing">A galeria online precisa ser configurada (Firebase) pelo dono deste site.</p>
+
+            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                <input type="text" id="gallery-search" data-i18n="gallerySearchPlaceholder" placeholder="Buscar por nome/autor..." style="flex:2; padding:5px; min-width:150px;" oninput="renderGalleryList()">
+                <select id="gallery-sort" style="flex:1; padding:5px; min-width:120px;" onchange="fetchGallery(true)">
+                    <option value="recent" data-i18n="gallerySortRecent">Mais Recentes</option>
+                    <option value="likes" data-i18n="gallerySortLikes">Mais Curtidos</option>
+                </select>
+                <button onclick="fetchGallery(true)" title="Atualizar" style="padding:5px 10px;">⟳</button>
+            </div>
+
+            <div id="gallery-list" style="max-height: 400px; overflow-y: auto;"></div>
+            <button onclick="fetchGallery(false)" id="gallery-loadmore-btn" style="margin-top:10px; display:none; width: 100%;" data-i18n="btnLoadMore">Carregar Mais</button>
+
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
         </div>
 
@@ -446,7 +469,25 @@
                 ctrlFpvFree: "1ª Pessoa (Livre)",
                 ctrlFpvRoom: "1ª Pessoa (Preso no Quarto)",
                 instOrbitExport: "Mouse: Clicar+Arrastar rot | Scroll: Zoom | V: Res | M: Modo",
-                instFpvExport: "WASD: Mover | Mouse: Olhar | Q/E: Cima/Baixo | V: Res | M: Modo"
+                instFpvExport: "WASD: Mover | Mouse: Olhar | Q/E: Cima/Baixo | V: Res | M: Modo",
+                btnGallery: "🌐 Galeria Online",
+                galleryTitle: "🌐 Galeria Online (Comunidade)",
+                galleryConfigMissing: "A galeria online precisa ser configurada (Firebase) pelo dono deste site.",
+                gallerySearchPlaceholder: "Buscar por nome/autor...",
+                gallerySortRecent: "Mais Recentes",
+                gallerySortLikes: "Mais Curtidos",
+                btnLoadMore: "Carregar Mais",
+                galleryLoading: "Carregando galeria...",
+                galleryEmpty: "Nenhuma criação encontrada.",
+                btnUpload: "☁ Enviar",
+                uploadPromptName: "Seu nome (aparecerá na galeria):",
+                uploadSuccess: "Sucesso!",
+                uploadDupError: "Esta criação (ou uma idêntica) já está na galeria!",
+                uploadInvalidError: "Este objeto não parece ser uma criação válida do gerador (código incompatível).",
+                uploadGenericError: "Erro: ",
+                btnLike: "❤ Curtir",
+                btnImportGallery: "Importar",
+                btnViewGallery: "Ver 3D"
             },
             en: {
                 title: "3D ASCII VOXEL GENERATOR",
@@ -527,7 +568,25 @@
                 ctrlFpvFree: "1st Person (Free)",
                 ctrlFpvRoom: "1st Person (Room Bounded)",
                 instOrbitExport: "Mouse: Click+Drag rot | Scroll: Zoom | V: Res | M: Mode",
-                instFpvExport: "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Mode"
+                instFpvExport: "WASD: Move | Mouse: Look | Q/E: Up/Down | V: Res | M: Mode",
+                btnGallery: "🌐 Online Gallery",
+                galleryTitle: "🌐 Online Gallery (Community)",
+                galleryConfigMissing: "The online gallery needs to be configured (Firebase) by this site's owner.",
+                gallerySearchPlaceholder: "Search by name/author...",
+                gallerySortRecent: "Most Recent",
+                gallerySortLikes: "Most Liked",
+                btnLoadMore: "Load More",
+                galleryLoading: "Loading gallery...",
+                galleryEmpty: "No creations found.",
+                btnUpload: "☁ Upload",
+                uploadPromptName: "Your name (will appear in the gallery):",
+                uploadSuccess: "Success!",
+                uploadDupError: "This creation (or an identical one) is already in the gallery!",
+                uploadInvalidError: "This object doesn't look like a valid generator creation (incompatible code).",
+                uploadGenericError: "Error: ",
+                btnLike: "❤ Like",
+                btnImportGallery: "Import",
+                btnViewGallery: "View 3D"
             },
             es: {
                 title: "GENERADOR VOXEL ASCII 3D",
@@ -608,7 +667,25 @@
                 ctrlFpvFree: "1ª Persona (Libre)",
                 ctrlFpvRoom: "1ª Persona (En Habitación)",
                 instOrbitExport: "Ratón: Clic+Arrastrar rot | Scroll: Zoom | V: Res | M: Modo",
-                instFpvExport: "WASD: Mover | Ratón: Mirar | Q/E: Arriba/Abajo | V: Res | M: Modo"
+                instFpvExport: "WASD: Mover | Ratón: Mirar | Q/E: Arriba/Abajo | V: Res | M: Modo",
+                btnGallery: "🌐 Galería Online",
+                galleryTitle: "🌐 Galería Online (Comunidad)",
+                galleryConfigMissing: "La galería online necesita ser configurada (Firebase) por el dueño de este sitio.",
+                gallerySearchPlaceholder: "Buscar por nombre/autor...",
+                gallerySortRecent: "Más Recientes",
+                gallerySortLikes: "Más Gustados",
+                btnLoadMore: "Cargar Más",
+                galleryLoading: "Cargando galería...",
+                galleryEmpty: "No se encontraron creaciones.",
+                btnUpload: "☁ Subir",
+                uploadPromptName: "Tu nombre (aparecerá en la galería):",
+                uploadSuccess: "¡Éxito!",
+                uploadDupError: "¡Esta creación (o una idéntica) ya está en la galería!",
+                uploadInvalidError: "Este objeto no parece ser una creación válida del generador (código incompatible).",
+                uploadGenericError: "Error: ",
+                btnLike: "❤ Me gusta",
+                btnImportGallery: "Importar",
+                btnViewGallery: "Ver 3D"
             },
             ja: {
                 title: "3D ASCII ボクセル ジェネレーター",
@@ -689,7 +766,25 @@
                 ctrlFpvFree: "1人称（フリー）",
                 ctrlFpvRoom: "1人称（部屋に固定）",
                 instOrbitExport: "マウス: ドラッグで回転 | スクロール: ズーム | V: 解像度 | M: モード",
-                instFpvExport: "WASD: 移動 | マウス: 視点 | Q/E: 上下 | V: 解像度 | M: モード"
+                instFpvExport: "WASD: 移動 | マウス: 視点 | Q/E: 上下 | V: 解像度 | M: モード",
+                btnGallery: "🌐 オンラインギャラリー",
+                galleryTitle: "🌐 オンラインギャラリー（コミュニティ）",
+                galleryConfigMissing: "オンラインギャラリーはこのサイトの運営者がFirebaseの設定を行う必要があります。",
+                gallerySearchPlaceholder: "名前・作者で検索...",
+                gallerySortRecent: "新着順",
+                gallerySortLikes: "人気順",
+                btnLoadMore: "もっと読み込む",
+                galleryLoading: "ギャラリーを読み込み中...",
+                galleryEmpty: "作品が見つかりません。",
+                btnUpload: "☁ アップロード",
+                uploadPromptName: "あなたの名前（ギャラリーに表示されます）:",
+                uploadSuccess: "成功しました！",
+                uploadDupError: "この作品（または同一のもの）は既にギャラリーにあります！",
+                uploadInvalidError: "この作品はジェネレーターの有効な作品ではないようです（互換性のないコード）。",
+                uploadGenericError: "エラー: ",
+                btnLike: "❤ いいね",
+                btnImportGallery: "インポート",
+                btnViewGallery: "3D表示"
             }
         };
 
@@ -764,6 +859,247 @@ Comece imediatamente com o código (por exemplo: '(() => { const objectGroup = n
 Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e não se esqueça de ativar 'castShadow = true' e 'receiveShadow = true' nos meshes.`;
 
         // ==========================================
+        // ONLINE GALLERY (FIREBASE FIRESTORE)
+        // ==========================================
+        // Para ativar a galeria online e gratuita (sem cadastro para quem envia):
+        // 1) Crie um projeto grátis em https://console.firebase.google.com
+        // 2) Ative "Firestore Database" (modo produção)
+        // 3) Em "Configurações do projeto > Seus apps > Web", copie as chaves para o objeto abaixo
+        // 4) Nas Regras do Firestore, use algo como:
+        //
+        //   rules_version = '2';
+        //   service cloud.firestore {
+        //     match /databases/{database}/documents {
+        //       match /gallery_objects/{docId} {
+        //         allow read: if true;
+        //         allow create: if request.resource.data.keys().hasAll(['name','author','code','hash','createdAt','likes'])
+        //                       && request.resource.data.likes == 0
+        //                       && request.resource.data.code is string
+        //                       && request.resource.data.code.size() < 20000
+        //                       && request.resource.data.name.size() < 80
+        //                       && request.resource.data.author.size() < 60;
+        //         allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        //                       && request.resource.data.likes == resource.data.likes + 1;
+        //         allow delete: if false;
+        //       }
+        //     }
+        //   }
+        //
+        // Isso impede edição/remoção por terceiros, permite apenas curtidas incrementais,
+        // e valida no servidor que o envio tem o formato esperado (defesa extra além da
+        // validação de código feita no cliente logo abaixo).
+
+        const firebaseConfig = {
+             apiKey: "AIzaSyAnXII96RwOSs7p-cdvmch7_S3A2-rcLEc",
+  authDomain: "project-engine-2f962.firebaseapp.com",
+  projectId: "project-engine-2f962",
+  storageBucket: "project-engine-2f962.firebasestorage.app",
+  messagingSenderId: "17396805461",
+  appId: "1:17396805461:web:11463e56e27a760eaec9dc",
+  measurementId: "G-EDTS1HS7T8"
+        };
+
+        let galleryDb = null;
+        let galleryEnabled = false;
+        try {
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf("COLE_SUA") === -1 && typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                galleryDb = firebase.firestore();
+                galleryEnabled = true;
+            }
+        } catch(e) {
+            console.warn("Galeria online não configurada:", e);
+            galleryEnabled = false;
+        }
+
+        let galleryItems = [];
+        let galleryLastDoc = null;
+        let galleryLoadingFlag = false;
+        const GALLERY_PAGE_SIZE = 20;
+
+        // Hash SHA-256 do código: usado como "código único" da criação para bloquear duplicatas.
+        async function sha256Hex(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Validação heurística: bloqueia envio de coisas que não são criações geradas por este app.
+        function isValidCreationCode(code) {
+            if (!code || typeof code !== 'string') return false;
+            if (code.length < 20 || code.length > 20000) return false;
+            const hasGroupOrMesh = /THREE\.(Group|Mesh)/.test(code);
+            const addsToScene = /window\.scene\.add/.test(code);
+            return hasGroupOrMesh && addsToScene;
+        }
+
+        function promptUploadToGallery(index, event) {
+            if (event) event.stopPropagation();
+            if (!galleryEnabled) {
+                alert(i18n[currentLang].galleryConfigMissing);
+                return;
+            }
+            const obj = voxelObjects[index];
+            if (!isValidCreationCode(obj.code)) {
+                alert(i18n[currentLang].uploadInvalidError);
+                return;
+            }
+            const savedAuthor = localStorage.getItem('voxel_author_name') || '';
+            showCustomPrompt(i18n[currentLang].uploadPromptName, savedAuthor, function(authorName) {
+                if (!authorName || !authorName.trim()) return;
+                doUploadToGallery(obj, authorName.trim());
+            });
+        }
+
+        async function doUploadToGallery(obj, authorName) {
+            try {
+                localStorage.setItem('voxel_author_name', authorName);
+                const hash = await sha256Hex(obj.code);
+
+                // Bloqueia duplicatas: se já existe uma criação com o mesmo hash de código, recusa o envio.
+                const existing = await galleryDb.collection('gallery_objects').where('hash', '==', hash).limit(1).get();
+                if (!existing.empty) {
+                    alert(i18n[currentLang].uploadDupError);
+                    return;
+                }
+
+                await galleryDb.collection('gallery_objects').add({
+                    name: (obj.name || 'Sem nome').substring(0, 60),
+                    author: authorName.substring(0, 40),
+                    code: obj.code,
+                    hash: hash,
+                    thumbnail: obj.thumbnail || null,
+                    createdAt: Date.now(),
+                    likes: 0
+                });
+
+                alert(i18n[currentLang].uploadSuccess);
+            } catch(e) {
+                console.error("Erro no upload:", e);
+                alert(i18n[currentLang].uploadGenericError + e.message);
+            }
+        }
+
+        async function fetchGallery(reset) {
+            if (!galleryEnabled) {
+                document.getElementById('gallery-config-warning').style.display = 'block';
+                return;
+            }
+            if (galleryLoadingFlag) return;
+            galleryLoadingFlag = true;
+
+            if (reset) {
+                galleryItems = [];
+                galleryLastDoc = null;
+                document.getElementById('gallery-list').innerHTML = `<p style="text-align:center; color:#0af;">${i18n[currentLang].galleryLoading}</p>`;
+            }
+
+            const sortSelect = document.getElementById('gallery-sort');
+            const sortMode = sortSelect ? sortSelect.value : 'recent';
+            const orderField = sortMode === 'likes' ? 'likes' : 'createdAt';
+
+            try {
+                let query = galleryDb.collection('gallery_objects').orderBy(orderField, 'desc').limit(GALLERY_PAGE_SIZE);
+                if (galleryLastDoc) query = query.startAfter(galleryLastDoc);
+
+                const snap = await query.get();
+                snap.forEach(doc => {
+                    galleryItems.push({ id: doc.id, ...doc.data() });
+                });
+                if (snap.docs.length > 0) {
+                    galleryLastDoc = snap.docs[snap.docs.length - 1];
+                }
+                document.getElementById('gallery-loadmore-btn').style.display = snap.docs.length === GALLERY_PAGE_SIZE ? 'block' : 'none';
+                renderGalleryList();
+            } catch(e) {
+                console.error("Erro ao buscar galeria:", e);
+                document.getElementById('gallery-list').innerHTML = `<p style="text-align:center; color:#f55;">${i18n[currentLang].uploadGenericError}${e.message}</p>`;
+            } finally {
+                galleryLoadingFlag = false;
+            }
+        }
+
+        function renderGalleryList() {
+            const listDiv = document.getElementById('gallery-list');
+            if (!listDiv) return;
+            const searchInput = document.getElementById('gallery-search');
+            const q = searchInput ? searchInput.value.toLowerCase() : '';
+
+            const filtered = galleryItems.filter(it =>
+                !q || (it.name || '').toLowerCase().includes(q) || (it.author || '').toLowerCase().includes(q)
+            );
+
+            listDiv.innerHTML = '';
+            if (filtered.length === 0) {
+                listDiv.innerHTML = `<p style="text-align:center; color:#555;">${i18n[currentLang].galleryEmpty}</p>`;
+                return;
+            }
+
+            filtered.forEach(it => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                const thumbHtml = it.thumbnail ? `<pre style="font-size:3px; line-height:3px; overflow:hidden; opacity:0.8; margin:0; font-family: monospace;">${it.thumbnail}</pre>` : '';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; flex-grow:1; overflow:hidden; gap:10px;">
+                        ${thumbHtml ? `<div style="width:50px; height:40px; overflow:hidden; border:1px solid #0f0; flex-shrink:0; background:rgba(0,20,0,0.8);">${thumbHtml}</div>` : ''}
+                        <div style="overflow:hidden;">
+                            <div class="list-item-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${it.name}</div>
+                            <div style="font-size:11px; color:#0af;">@${it.author || '?'} · ❤ ${it.likes || 0}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap; flex-shrink:0;">
+                        <button onclick="viewGalleryItem('${it.id}')" style="padding:5px 10px; background:#222; border:1px solid #555;">${i18n[currentLang].btnViewGallery}</button>
+                        <button onclick="importGalleryItem('${it.id}')" style="padding:5px 10px; background:#336600; border-color:#55ff00; color:#55ff00;">${i18n[currentLang].btnImportGallery}</button>
+                        <button onclick="likeGalleryItem('${it.id}', event)" style="padding:5px 10px; background:#440022; border-color:#ff5599; color:#ff5599;">${i18n[currentLang].btnLike}</button>
+                    </div>
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+
+        function viewGalleryItem(id) {
+            const it = galleryItems.find(g => g.id === id);
+            if (!it) return;
+            const tempIndex = voxelObjects.length;
+            voxelObjects.push({ name: it.name, code: it.code, id: 'gallery_' + id, createdAt: Date.now(), updatedAt: Date.now(), lastUsedAt: Date.now(), favorite: false, tags: ['galeria'] });
+            enterSimpleView(tempIndex);
+        }
+
+        function importGalleryItem(id) {
+            const it = galleryItems.find(g => g.id === id);
+            if (!it) return;
+            voxelObjects.unshift({
+                name: it.name,
+                code: it.code,
+                id: 'imported_' + Date.now(),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                lastUsedAt: Date.now(),
+                favorite: false,
+                tags: ['galeria', it.author ? '@' + it.author : ''].filter(Boolean)
+            });
+            localStorage.setItem('voxel_objects', JSON.stringify(voxelObjects));
+            alert(i18n[currentLang].uploadSuccess);
+        }
+
+        async function likeGalleryItem(id, event) {
+            if (event) event.stopPropagation();
+            if (!galleryEnabled) return;
+            try {
+                const ref = galleryDb.collection('gallery_objects').doc(id);
+                await galleryDb.runTransaction(async (t) => {
+                    const doc = await t.get(ref);
+                    const current = (doc.data().likes || 0);
+                    t.update(ref, { likes: current + 1 });
+                });
+                const it = galleryItems.find(g => g.id === id);
+                if (it) it.likes = (it.likes || 0) + 1;
+                renderGalleryList();
+            } catch(e) {
+                console.error("Erro ao curtir:", e);
+            }
+        }
+
+        // ==========================================
         // UI NAVIGATION & API KEY MANAGEMENT
         // ==========================================
         function showPanel(panelId) {
@@ -773,6 +1109,15 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
             if(panelId === 'panel-objects') {
                 renderObjectsList();
+            }
+            if(panelId === 'panel-gallery') {
+                if (!galleryEnabled) {
+                    document.getElementById('gallery-config-warning').style.display = 'block';
+                } else {
+                    document.getElementById('gallery-config-warning').style.display = 'none';
+                    if (galleryItems.length === 0) fetchGallery(true);
+                    else renderGalleryList();
+                }
             }
             const langContainer = document.getElementById('lang-container');
             if (langContainer) {
@@ -965,6 +1310,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                             <div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;">
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 2px; font-size: 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff; flex: 1;">#</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 2px; font-size: 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00; flex: 1;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="promptUploadToGallery(${index}, event)" title="${i18n[currentLang].btnUpload}" style="padding: 2px; font-size: 10px; background: #004488; color: #00aaff; border: 1px solid #00aaff; flex: 1;">☁</button>
                                 <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 2px; font-size: 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33; flex: 1;">HTML</button>
                                 <button onclick="deleteObject(${index})" title="X" style="padding: 2px; font-size: 10px; background: #300; color: #f00; border: 1px solid #f00; flex: 1;">X</button>
                             </div>
@@ -980,6 +1326,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                                 <button onclick="renameObject(${index}, event)" title="${i18n[currentLang].btnRename}" style="padding: 5px 10px; background: #222; border: 1px solid #555;">${i18n[currentLang].btnRename}</button>
                                 <button onclick="manageTags(${index}, event)" title="${i18n[currentLang].btnTags}" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">${i18n[currentLang].btnTags}</button>
                                 <button onclick="duplicateObject(${index}, event)" title="${i18n[currentLang].btnDup}" style="padding: 5px 10px; background: #003300; color: #00ff00; border: 1px solid #00ff00;">${i18n[currentLang].btnDup}</button>
+                                <button onclick="promptUploadToGallery(${index}, event)" title="${i18n[currentLang].btnUpload}" style="padding: 5px 10px; background: #004488; color: #00aaff; border: 1px solid #00aaff;">${i18n[currentLang].btnUpload}</button>
                                 <button onclick="exportObject(${index}, 'json')" title="JSON" style="padding: 5px 10px; background: #003366; color: #00aaff; border: 1px solid #00aaff;">JSON</button>
                                 <button onclick="exportObject(${index}, 'js')" title="JS" style="padding: 5px 10px; background: #333300; color: #ffff00; border: 1px solid #ffff00;">JS</button>
                                 <button onclick="openExportMenu(${index}, event)" title="HTML" style="padding: 5px 10px; background: #996633; color: #ffaa33; border: 1px solid #ffaa33;">HTML</button>
