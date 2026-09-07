@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador Voxel em ASCII 3D - Web Edition</title>
+    <title>Dream Engine</title>
     <style>
         body {
             margin: 0;
@@ -216,7 +216,7 @@
         </div>
 
         <div id="panel-menu" class="panel active">
-            <h1 data-i18n="title">GERADOR VOXEL ASCII 3D</h1>
+            <h1 data-i18n="title">DREAM ENGINE</h1>
             
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button onclick="showPanel('panel-create')" style="flex: 2;" data-i18n="btnCreate">Criar Novo</button>
@@ -227,12 +227,7 @@
 
             <button onclick="showPanel('panel-gallery')" style="margin-bottom: 15px; background: #004488; border-color: #00aaff; color: #00aaff;" data-i18n="btnGallery">🌐 Galeria Online</button>
 
-            <button onclick="enterRoom()" style="margin-bottom: 15px;" data-i18n="btnCreator">Entrar (Modo Criador)</button>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button onclick="triggerSceneImport('room')" style="flex: 1; background: #996633; border-color: #ffaa33; color: #ffaa33;" data-i18n="btnLoadEdit">Editar Cena</button>
-                <button onclick="triggerSceneImport('free_fpv')" style="flex: 1; background: #663399; border-color: #aa77ff; color: #aa77ff;" data-i18n="btnLoadFree">Carregar (Free)</button>
-            </div>
+            <button onclick="showPanel('panel-scenes')" style="margin-bottom: 15px;" data-i18n="btnCreator">Editor de Cenas</button>
 
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button id="res-btn-menu" onclick="cycleResolution()" style="flex: 1; background: #444; border-color: #888; color: #fff;">Resolução: Normal (V)</button>
@@ -366,6 +361,16 @@
             </div>
         </div>
 
+        <div id="panel-scenes" class="panel">
+            <h2 data-i18n="btnCreator">Editor de Cenas</h2>
+            <button onclick="enterRoom()" style="margin-bottom: 15px; background: #336600; border-color: #55ff00;" data-i18n="btnNewScene">Nova Cena</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="triggerSceneImport('room')" style="flex: 1; background: #996633; border-color: #ffaa33; color: #ffaa33;" data-i18n="btnLoadEdit">Editar Cena</button>
+                <button onclick="triggerSceneImport('free_fpv')" style="flex: 1; background: #663399; border-color: #aa77ff; color: #aa77ff;" data-i18n="btnLoadFree">Visualizar Cena</button>
+            </div>
+            <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
+        </div>
+
         <div id="panel-prompt" class="panel" style="z-index: 1000;">
             <h2 id="prompt-title">Aviso</h2>
             <input type="text" id="prompt-val" placeholder="...">
@@ -426,13 +431,14 @@
         
         const i18n = {
             pt: {
-                title: "GERADOR VOXEL ASCII 3D",
+                title: "DREAM ENGINE",
                 btnCreate: "Criar Novo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Meus Objetos",
-                btnCreator: "Entrar (Modo Criador)",
+                btnCreator: "Editor de Cenas",
+                btnNewScene: "Nova Cena",
                 btnLoadEdit: "Editar Cena",
-                btnLoadFree: "Carregar (Free)",
+                btnLoadFree: "Visualizar Cena",
                 btnApi: "Configurar API Key (Gemini)",
                 btnBack: "Voltar",
                 btnSpawn: "Spawnar",
@@ -525,13 +531,14 @@
                 btnViewGallery: "Ver 3D"
             },
             en: {
-                title: "3D ASCII VOXEL GENERATOR",
+                title: "DREAM ENGINE",
                 btnCreate: "Create New",
                 btnImport: "Import Object",
                 btnMyObjs: "My Objects",
-                btnCreator: "Enter (Creator Mode)",
+                btnCreator: "Scene Editor",
+                btnNewScene: "New Scene",
                 btnLoadEdit: "Edit Scene",
-                btnLoadFree: "Load (Free)",
+                btnLoadFree: "View Scene",
                 btnApi: "Setup API Key (Gemini)",
                 btnBack: "Back",
                 btnSpawn: "Spawn",
@@ -624,13 +631,14 @@
                 btnViewGallery: "View 3D"
             },
             es: {
-                title: "GENERADOR VOXEL ASCII 3D",
+                title: "DREAM ENGINE",
                 btnCreate: "Crear Nuevo",
                 btnImport: "Importar Objeto",
                 btnMyObjs: "Mis Objetos",
-                btnCreator: "Entrar (Modo Creador)",
+                btnCreator: "Editor de Escenas",
+                btnNewScene: "Nueva Escena",
                 btnLoadEdit: "Editar Escena",
-                btnLoadFree: "Cargar (Libre)",
+                btnLoadFree: "Ver Escena",
                 btnApi: "Configurar API Key (Gemini)",
                 btnBack: "Volver",
                 btnSpawn: "Spawnear",
@@ -723,13 +731,14 @@
                 btnViewGallery: "Ver 3D"
             },
             ja: {
-                title: "3D ASCII ボクセル ジェネレーター",
+                title: "DREAM ENGINE",
                 btnCreate: "新規作成",
                 btnImport: "インポート",
                 btnMyObjs: "マイオブジェクト",
-                btnCreator: "入る (クリエイターモード)",
+                btnCreator: "シーンエディター",
+                btnNewScene: "新しいシーン",
                 btnLoadEdit: "シーン編集",
-                btnLoadFree: "読み込む (フリー)",
+                btnLoadFree: "シーンを見る",
                 btnApi: "APIキー設定 (Gemini)",
                 btnBack: "戻る",
                 btnSpawn: "スポーン",
@@ -1482,7 +1491,17 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 alert(i18n[currentLang].alertSceneEmpty);
                 return;
             }
-            const content = JSON.stringify(currentSceneData, null, 2);
+            let targetPos = [0,0,0];
+            if (window.orbitControls) targetPos = window.orbitControls.target.toArray();
+            const exportData = {
+                items: currentSceneData,
+                cameraPos: window.camera.position.toArray(),
+                cameraRot: window.camera.rotation.toArray(),
+                targetPos: targetPos,
+                renderMode: currentRenderMode,
+                resLevel: currentResLevel
+            };
+            const content = JSON.stringify(exportData, null, 2);
             const blob = new Blob([content], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1559,14 +1578,25 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 sceneDataToExport = currentSceneData;
             } else {
                 sceneDataToExport = [{
-                    code: voxelObjects[currentExportTarget].code,
+                    code: typeof voxelObjects[currentExportTarget] === 'string' ? voxelObjects[currentExportTarget] : voxelObjects[currentExportTarget].code,
                     position: {x: 0, y: 0, z: 0},
                     scale: {x: 1, y: 1, z: 1},
                     rotation: {x: 0, y: 0, z: 0}
                 }];
             }
             
-            const sceneJson = JSON.stringify(sceneDataToExport);
+            let targetPos = [0,0,0];
+            if (window.orbitControls) targetPos = window.orbitControls.target.toArray();
+            const exportData = {
+                items: sceneDataToExport,
+                cameraPos: window.camera.position.toArray(),
+                cameraRot: window.camera.rotation.toArray(),
+                targetPos: targetPos,
+                renderMode: currentRenderMode,
+                resLevel: currentResLevel
+            };
+            // Safely stringify and escape scripts - FIXED BACKSLASH BUG
+            const sceneJson = JSON.stringify(exportData).replace(/</g, '\\u003c');
             
             const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -1595,9 +1625,14 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         </div>
     </div>
     <script>
-        const sceneData = ${sceneJson};
+        const exportData = ${sceneJson};
+        const sceneData = exportData.items || exportData; 
         const controlMode = "${controlMode}";
-        const initialRenderMode = ${renderModeStr};
+        const initialRenderMode = exportData.renderMode !== undefined ? exportData.renderMode : ${renderModeStr};
+        const initialResLevel = exportData.resLevel || 0;
+        const initialCamPos = exportData.cameraPos || [10, 10, 15];
+        const initialCamRot = exportData.cameraRot || [0, 0, 0];
+        const initialTarget = exportData.targetPos || [0, 0, 0];
         
         const scene = new THREE.Scene();
         window.scene = scene;
@@ -1615,7 +1650,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.renderer.domElement.style.height = '100%';
         window.renderer.domElement.style.zIndex = '0';
         window.renderer.domElement.style.opacity = '0';
-        window.renderer.domElement.style.pointerEvents = 'none';
+        
         document.body.insertBefore(window.renderer.domElement, document.getElementById('ascii-container'));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1625,7 +1660,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let cols, rows, pixels;
         let charW = 6, charH = 10;
         let asciiScale = 1.0;
-        let currentResLevel = 0;
+        let currentResLevel = typeof initialResLevel !== 'undefined' ? initialResLevel : 0;
         let currentRenderMode = initialRenderMode;
         const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
 
@@ -1636,7 +1671,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if (currentRenderMode === 0) {
                 document.getElementById('ascii-container').style.display = 'block';
                 canvas.style.opacity = '0';
-                canvas.style.pointerEvents = 'none';
+                
                 window.renderer.toneMapping = THREE.NoToneMapping;
             } else {
                 document.getElementById('ascii-container').style.display = 'none';
@@ -1732,8 +1767,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            camera.position.set(10, 10, 15);
-            controls.target.set(0, 0, 0);
+            camera.position.fromArray(initialCamPos);
+            camera.rotation.fromArray(initialCamRot);
+            controls.target.fromArray(initialTarget);
             
             const overlay = document.getElementById('overlay');
             overlay.addEventListener('click', () => {
@@ -1742,7 +1778,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         } else {
             controls = new THREE.PointerLockControls(camera, document.body);
             scene.add(controls.getObject());
-            controls.getObject().position.set(0, 5, 10);
+            controls.getObject().position.fromArray(initialCamPos);
+            controls.getObject().rotation.fromArray(initialCamRot);
             
             const overlay = document.getElementById('overlay');
             overlay.addEventListener('click', () => controls.lock());
@@ -1751,9 +1788,13 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         sceneData.forEach(item => {
-            window.spawnTargetPosition = new THREE.Vector3(item.position.x, item.position.y, item.position.z);
-            window.spawnTargetScale = item.scale ? new THREE.Vector3(item.scale.x, item.scale.y, item.scale.z) : new THREE.Vector3(1, 1, 1);
-            window.spawnTargetRotation = item.rotation ? new THREE.Vector3(item.rotation.x, item.rotation.y, item.rotation.z) : new THREE.Vector3(0, 0, 0);
+            let codeStr = typeof item === 'string' ? item : item.code;
+            let pos = item.position || {x:0, y:0, z:0};
+            let scl = item.scale || {x:1, y:1, z:1};
+            let rot = item.rotation || {x:0, y:0, z:0};
+            window.spawnTargetPosition = new THREE.Vector3(pos.x, pos.y, pos.z);
+            window.spawnTargetScale = new THREE.Vector3(scl.x, scl.y, scl.z);
+            window.spawnTargetRotation = new THREE.Vector3(rot.x, rot.y, rot.z);
 
             const originalAdd = window.scene.add.bind(window.scene);
             window.scene.add = function(...objects) {
@@ -1767,7 +1808,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 originalAdd(...objects);
             };
 
-            try { eval(item.code); } catch(e) { console.error(e); }
+            try { eval("(function(){ " + codeStr + " })();"); } catch(e) { console.error(e); }
             window.scene.add = originalAdd;
         });
         window.spawnTargetPosition = null;
@@ -1851,7 +1892,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     }
                     asciiLines.push(rowStr);
                 }
-                asciiContainer.textContent = asciiLines.join('\n');
+                asciiContainer.textContent = asciiLines.join('\\n');
             }
         }
         animate();
@@ -1870,6 +1911,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             
             closeExportMenu();
         }
+
 
         function triggerSceneImport(mode = 'free_fpv') {
             window.sceneImportMode = mode;
@@ -1898,7 +1940,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             event.target.value = '';
         }
 
-        function loadSceneIntoMode(sceneData, targetMode) {
+        function loadSceneIntoMode(sceneData, targetMode, extraData = null) {
             if (targetMode === 'room') {
                 enterRoom();
             } else {
@@ -1928,7 +1970,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 item.spawnId = window.currentSpawnId;
                 
                 try {
-                    eval(item.code);
+                    // Wrap in IIFE to prevent re-declaration errors
+                    eval("(function(){ " + item.code + " })();");
                 } catch(e) {
                     console.error("Erro ao carregar objeto da cena:", e);
                 }
@@ -1937,6 +1980,26 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             window.spawnTargetScale = null;
             window.spawnTargetRotation = null;
             window.currentSpawnId = null;
+            
+            if (extraData) {
+                if (extraData.renderMode !== undefined) {
+                    setRenderMode(extraData.renderMode);
+                }
+                if (extraData.resLevel !== undefined) {
+                    currentResLevel = extraData.resLevel;
+                    // trigger resolution update if not default? Actually cycleResolution loops it, but we can set it and call setupAsciiGrid
+                    setupAsciiGrid();
+                }
+                if (extraData.cameraPos) {
+                    window.camera.position.fromArray(extraData.cameraPos);
+                }
+                if (extraData.cameraRot) {
+                    window.camera.rotation.fromArray(extraData.cameraRot);
+                }
+                if (extraData.targetPos && window.orbitControls) {
+                    window.orbitControls.target.fromArray(extraData.targetPos);
+                }
+            }
         }
 
         async function generateObject() {
@@ -2060,7 +2123,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.renderer.domElement.style.height = '100%';
         window.renderer.domElement.style.zIndex = '0';
         window.renderer.domElement.style.opacity = '0';
-        window.renderer.domElement.style.pointerEvents = 'none';
+        
         document.body.insertBefore(window.renderer.domElement, document.getElementById('ascii-container'));
         window.renderer.shadowMap.enabled = true;
         window.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2092,7 +2155,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             if (currentRenderMode === 0) {
                 document.getElementById('ascii-container').style.display = 'block';
                 canvas.style.opacity = '0';
-                canvas.style.pointerEvents = 'none';
+                
                 window.renderer.toneMapping = THREE.NoToneMapping;
             } else {
                 document.getElementById('ascii-container').style.display = 'none';
