@@ -290,10 +290,15 @@
 
         <div id="panel-api" class="panel">
             <h2 data-i18n="apiConfigTitle">Configuração da API</h2>
-            <p data-i18n="apiConfigDesc">Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
+            
+            <p data-i18n="apiConfigCreator" style="margin-top: 10px;">Nome de Criador (Galeria):</p>
+            <input type="text" id="creator-name-input" data-i18n="creatorNamePlaceholder" placeholder="Seu Nome / Your Name">
+
+            <p data-i18n="apiConfigDesc" style="margin-top: 10px;">Insira sua Gemini API Key. Ela ficará salva com segurança apenas no <b>armazenamento local (localStorage)</b> do seu navegador.</p>
             <input type="password" id="api-key-input" placeholder="AIzaSy...">
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button onclick="saveApiKey()" style="flex: 1;" data-i18n="btnSaveKey">Salvar Chave</button>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="saveApiAndCreator()" style="flex: 1;" data-i18n="btnSaveKey">Salvar Chave</button>
                 <button onclick="deleteApiKey()" style="flex: 1; color: #ff5555; border-color: #ff5555;" data-i18n="btnDelKey">Deletar Chave</button>
             </div>
             <button onclick="showPanel('panel-menu')" style="margin-top: 15px;" data-i18n="btnBack">Voltar</button>
@@ -474,6 +479,9 @@
                 promptDelete: "Tem certeza que deseja deletar este objeto?",
                 promptNameNewObj: "Nome do novo objeto:",
                 apiConfigTitle: "Configuração da API",
+                apiConfigCreator: "Nome de Criador (Galeria):",
+                creatorNamePlaceholder: "Seu Nome / Your Name",
+                userUnknown: "usuário desconhecido",
                 apiConfigDesc: "Insira sua Gemini API Key. Ela ficará salva com segurança apenas no armazenamento local (localStorage) do seu navegador.",
                 btnSaveKey: "Salvar Chave",
                 btnDelKey: "Deletar Chave",
@@ -574,6 +582,9 @@
                 promptDelete: "Are you sure you want to delete this object?",
                 promptNameNewObj: "New object name:",
                 apiConfigTitle: "API Configuration",
+                apiConfigCreator: "Creator Name (Gallery):",
+                creatorNamePlaceholder: "Your Name",
+                userUnknown: "user unknown",
                 apiConfigDesc: "Enter your Gemini API Key. It will be securely saved only in your browser's local storage.",
                 btnSaveKey: "Save Key",
                 btnDelKey: "Delete Key",
@@ -674,6 +685,9 @@
                 promptDelete: "¿Estás seguro de que quieres eliminar este objeto?",
                 promptNameNewObj: "Nombre del nuevo objeto:",
                 apiConfigTitle: "Configuración de API",
+                apiConfigCreator: "Nombre de Creador (Galería):",
+                creatorNamePlaceholder: "Tu Nombre",
+                userUnknown: "usuario desconocido",
                 apiConfigDesc: "Ingresa tu Gemini API Key. Se guardará de forma segura solo en el almacenamiento local de tu navegador.",
                 btnSaveKey: "Guardar Clave",
                 btnDelKey: "Eliminar Clave",
@@ -774,6 +788,9 @@
                 promptDelete: "このオブジェクトを削除してもよろしいですか？",
                 promptNameNewObj: "新しいオブジェクト名:",
                 apiConfigTitle: "API設定",
+                apiConfigCreator: "クリエイター名（ギャラリー）:",
+                creatorNamePlaceholder: "あなたの名前",
+                userUnknown: "不明なユーザー",
                 apiConfigDesc: "Gemini APIキーを入力してください。ブラウザのローカルストレージにのみ安全に保存されます。",
                 btnSaveKey: "キーを保存",
                 btnDelKey: "キーを削除",
@@ -952,16 +969,21 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 alert(i18n[currentLang].uploadInvalidError);
                 return;
             }
-            const savedAuthor = localStorage.getItem('voxel_author_name') || '';
-            showCustomPrompt(i18n[currentLang].uploadPromptName, savedAuthor, function(authorName) {
-                if (!authorName || !authorName.trim()) return;
-                doUploadToGallery(obj, authorName.trim());
+            
+            showCustomPrompt(i18n[currentLang].promptNameNewObj || "Nome do objeto:", obj.name, function(objName) {
+                if (!objName || !objName.trim()) return;
+                
+                let savedAuthor = localStorage.getItem('voxel_author_name');
+                if (!savedAuthor || !savedAuthor.trim()) {
+                    savedAuthor = i18n[currentLang].userUnknown || 'user unknown';
+                }
+                
+                doUploadToGallery(obj, savedAuthor.trim(), objName.trim());
             });
         }
 
-        async function doUploadToGallery(obj, authorName) {
+        async function doUploadToGallery(obj, authorName, objName) {
             try {
-                localStorage.setItem('voxel_author_name', authorName);
                 const hash = await sha256Hex(obj.code);
 
                 const existing = await galleryDb.collection('gallery_objects').where('hash', '==', hash).limit(1).get();
@@ -970,15 +992,22 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     return;
                 }
 
-                await galleryDb.collection('gallery_objects').add({
-                    name: (obj.name || 'Sem nome').substring(0, 60),
+                const docData = {
+                    name: (objName || 'Sem nome').substring(0, 60),
                     author: authorName.substring(0, 40),
                     code: obj.code,
                     hash: hash,
-                    thumbnail: obj.thumbnail || null,
+                    thumbnail: obj.thumbnail || "",
                     createdAt: Date.now(),
-                    likes: 0
-                });
+                    likes: 0,
+                    likedIPs: []
+                };
+                
+                if (obj.tags && Array.isArray(obj.tags) && obj.tags.length > 0) {
+                    docData.tags = obj.tags;
+                }
+
+                await galleryDb.collection('gallery_objects').add(docData);
 
                 alert(i18n[currentLang].uploadSuccess);
             } catch(e) {
@@ -1033,7 +1062,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const q = searchInput ? searchInput.value.toLowerCase() : '';
 
             const filtered = galleryItems.filter(it =>
-                !q || (it.name || '').toLowerCase().includes(q) || (it.author || '').toLowerCase().includes(q)
+                !q || (it.name || '').toLowerCase().includes(q) || (it.author || '').toLowerCase().includes(q) || (it.tags && it.tags.join(' ').toLowerCase().includes(q))
             );
 
             listDiv.innerHTML = '';
@@ -1046,12 +1075,18 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 const item = document.createElement('div');
                 item.className = 'list-item';
                 const thumbHtml = it.thumbnail ? `<pre style="font-size:3px; line-height:3px; overflow:hidden; opacity:0.8; margin:0; font-family: monospace;">${it.thumbnail}</pre>` : '';
+                
+                const tagsHtml = (it.tags || []).map(t => `<span style="background:#0f0; color:#000; font-size:9px; padding:2px 4px; border-radius:3px; display:inline-block; margin-left:5px;">${t}</span>`).join('');
+                
                 item.innerHTML = `
                     <div style="display:flex; align-items:center; flex-grow:1; overflow:hidden; gap:10px;">
                         ${thumbHtml ? `<div style="width:50px; height:40px; overflow:hidden; border:1px solid #0f0; flex-shrink:0; background:rgba(0,20,0,0.8);">${thumbHtml}</div>` : ''}
-                        <div style="overflow:hidden;">
+                        <div style="overflow:hidden; flex-grow:1;">
                             <div class="list-item-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${it.name}</div>
                             <div style="font-size:11px; color:#0af;">@${it.author || '?'} · ❤ ${it.likes || 0}</div>
+                        </div>
+                        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-right:10px; flex-shrink:0; align-items:center;">
+                            ${tagsHtml}
                         </div>
                     </div>
                     <div style="display:flex; gap:5px; flex-wrap:wrap; flex-shrink:0;">
@@ -1153,13 +1188,13 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         }
 
-        function saveApiKey() {
+        function saveApiAndCreator() {
             const key = document.getElementById('api-key-input').value.trim();
-            if(key) {
-                localStorage.setItem('gemini_api_key', key);
-                alert(i18n[currentLang].alertKeySaved);
-                showPanel('panel-menu');
-            }
+            const creator = document.getElementById('creator-name-input').value.trim();
+            if(key) localStorage.setItem('gemini_api_key', key);
+            localStorage.setItem('voxel_author_name', creator);
+            alert(i18n[currentLang].alertKeySaved);
+            showPanel('panel-menu');
         }
         
         function deleteApiKey() {
@@ -1169,6 +1204,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         document.getElementById('api-key-input').value = localStorage.getItem('gemini_api_key') || "";
+        const savedCreator = localStorage.getItem('voxel_author_name') || "";
+        const creatorInput = document.getElementById('creator-name-input');
+        if (creatorInput) creatorInput.value = savedCreator;
 
         let objViewMode = 'list';
 
