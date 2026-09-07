@@ -524,11 +524,11 @@
                 uploadPromptName: "Seu nome (aparecerá na galeria):",
                 uploadSuccess: "Sucesso!",
                 uploadDupError: "Esta criação (ou uma idêntica) já está na galeria!",
-                uploadInvalidError: "Este objeto não parece ser uma criação válida do gerador (código incompatível).",
+                uploadInvalidError: "Este objeto não parece ser uma criação válida do gerador.",
                 uploadGenericError: "Erro: ",
                 btnLike: "❤ Curtir",
                 btnImportGallery: "Importar",
-                btnViewGallery: "Ver 3D"
+                btnViewGallery: "Ver"
             },
             en: {
                 title: "DREAM ENGINE",
@@ -624,11 +624,11 @@
                 uploadPromptName: "Your name (will appear in the gallery):",
                 uploadSuccess: "Success!",
                 uploadDupError: "This creation (or an identical one) is already in the gallery!",
-                uploadInvalidError: "This object doesn't look like a valid generator creation (incompatible code).",
+                uploadInvalidError: "This object doesn't look like a valid generator creation.",
                 uploadGenericError: "Error: ",
                 btnLike: "❤ Like",
                 btnImportGallery: "Import",
-                btnViewGallery: "View 3D"
+                btnViewGallery: "View"
             },
             es: {
                 title: "DREAM ENGINE",
@@ -724,11 +724,11 @@
                 uploadPromptName: "Tu nombre (aparecerá en la galería):",
                 uploadSuccess: "¡Éxito!",
                 uploadDupError: "¡Esta creación (o una idéntica) ya está en la galería!",
-                uploadInvalidError: "Este objeto no parece ser una creación válida del generador (código incompatible).",
+                uploadInvalidError: "Este objeto no parece ser una creación válida del generador.",
                 uploadGenericError: "Error: ",
                 btnLike: "❤ Me gusta",
                 btnImportGallery: "Importar",
-                btnViewGallery: "Ver 3D"
+                btnViewGallery: "Ver"
             },
             ja: {
                 title: "DREAM ENGINE",
@@ -824,11 +824,11 @@
                 uploadPromptName: "あなたの名前（ギャラリーに表示されます）:",
                 uploadSuccess: "成功しました！",
                 uploadDupError: "この作品（または同一のもの）は既にギャラリーにあります！",
-                uploadInvalidError: "この作品はジェネレーターの有効な作品ではないようです（互換性のないコード）。",
+                uploadInvalidError: "この作品はジェネレーターの有効な作品ではないようです。",
                 uploadGenericError: "エラー: ",
                 btnLike: "❤ いいね",
                 btnImportGallery: "インポート",
-                btnViewGallery: "3D表示"
+                btnViewGallery: "表示"
             }
         };
 
@@ -940,10 +940,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
 
         function isValidCreationCode(code) {
             if (!code || typeof code !== 'string') return false;
-            if (code.length < 20 || code.length > 20000) return false;
-            const hasGroupOrMesh = /THREE\.(Group|Mesh)/.test(code);
-            const addsToScene = /window\.scene\.add/.test(code);
-            return hasGroupOrMesh && addsToScene;
+            if (code.length < 10 || code.length > 500000) return false;
+            return true;
         }
 
         function promptUploadToGallery(index, event) {
@@ -1073,9 +1071,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         function viewGalleryItem(id) {
             const it = galleryItems.find(g => g.id === id);
             if (!it) return;
-            const tempIndex = voxelObjects.length;
-            voxelObjects.push({ name: it.name, code: it.code, id: 'gallery_' + id, createdAt: Date.now(), updatedAt: Date.now(), lastUsedAt: Date.now(), favorite: false, tags: ['galeria'] });
-            enterSimpleView(tempIndex);
+            enterSimpleView(null, it.code);
         }
 
         function importGalleryItem(id) {
@@ -2440,7 +2436,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             updateHUDText();
         });
 
-        function enterSimpleView(objIndex) {
+        function enterSimpleView(objIndex, customCode = null) {
             currentMode = 'simple';
             showPanel(null); 
             document.getElementById('hud').classList.add('active');
@@ -2460,7 +2456,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             pointerLockControls.unlock();
 
             try {
-                eval(voxelObjects[objIndex].code);
+                if (customCode) {
+                    eval(customCode);
+                } else {
+                    eval(voxelObjects[objIndex].code);
+                }
             } catch(e) {
                 console.error("Erro ao carregar o objeto 3D:", e);
                 alert(i18n[currentLang].alertCodeError);
