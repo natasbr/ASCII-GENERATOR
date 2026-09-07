@@ -284,6 +284,7 @@
                     <option value="likes" data-i18n="gallerySortLikes">Mais Curtidos</option>
                 </select>
                 <button onclick="fetchGallery(true)" title="Atualizar" style="padding:5px 10px;">⟳</button>
+                <button onclick="adminLogin()" title="Admin Login" style="padding:5px 10px; background:#440000; border-color:#ff0000; color:#ff0000;">🔒</button>
             </div>
 
             <div id="gallery-list" style="max-height: 400px; overflow-y: auto;"></div>
@@ -388,6 +389,40 @@
         let currentMode = 'menu'; 
         let currentSceneData = [];
         let currentLang = 'pt';
+        
+        let userIP = 'unknown';
+        fetch('https://api.ipify.org?format=json')
+            .then(r => r.json())
+            .then(d => { userIP = d.ip; })
+            .catch(e => console.log('Could not fetch IP', e));
+            
+        let isAdmin = false;
+        function adminLogin() {
+            const pwd = prompt(currentLang === 'en' ? "Admin Password:" : "Senha de Administrador:");
+            if (pwd === "admin123") {
+                isAdmin = true;
+                alert(currentLang === 'en' ? "Admin mode activated." : "Modo administrador ativado.");
+                if (document.getElementById('panel-gallery').classList.contains('active')) {
+                    renderGalleryList();
+                }
+            } else if (pwd !== null) {
+                alert(currentLang === 'en' ? "Incorrect password." : "Senha incorreta.");
+            }
+        }
+
+        async function deleteGalleryItem(id, event) {
+            if (event) event.stopPropagation();
+            if (!isAdmin) return;
+            if (confirm(currentLang === 'en' ? "Are you sure you want to delete this from the public gallery?" : "Tem certeza que deseja apagar isso da galeria pública?")) {
+                try {
+                    await galleryDb.collection('gallery_objects').doc(id).delete();
+                    alert("Deleted!");
+                    fetchGallery(true);
+                } catch(e) {
+                    alert("Error: " + e.message);
+                }
+            }
+        }
         
         const i18n = {
             pt: {
@@ -810,7 +845,6 @@
         }
         
         function updateStaticGalleryTexts() {
-            // Update mode button, options, etc that might not be rerendered by renderObjectsList
             document.getElementById('view-mode-btn').innerText = objViewMode === 'list' ? i18n[currentLang].viewList : i18n[currentLang].viewGrid;
             
             const sortSelect = document.getElementById('obj-sort');
@@ -854,40 +888,13 @@ O código deve ser auto-contido.
 Use 'var' em vez de 'const' ou 'let' no nível mais alto se precisar, ou coloque o código dentro de um bloco de função anônima auto-executável '(() => { ... })();' para evitar erros de redeclaração.
 O código deve criar um 'THREE.Group' contendo vários 'THREE.Mesh' com 'THREE.BoxGeometry' e 'THREE.MeshStandardMaterial' que representam o objeto descrito pelo usuário.
 Após criar o grupo e os meshes (que devem ser coloridos), adicione-os à 'window.scene' na posição (0, 0, 0).
-Retorne APENAS o código JavaScript. NÃO use marcação markdown (como \`\`\`javascript).
+Retorne APENAS o código JavaScript. NÃO use marcação markdown (como 'javascript').
 Comece imediatamente com o código (por exemplo: '(() => { const objectGroup = new THREE.Group(); ... window.scene.add(objectGroup); })();').
 Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e não se esqueça de ativar 'castShadow = true' e 'receiveShadow = true' nos meshes.`;
 
         // ==========================================
         // ONLINE GALLERY (FIREBASE FIRESTORE)
         // ==========================================
-        // Para ativar a galeria online e gratuita (sem cadastro para quem envia):
-        // 1) Crie um projeto grátis em https://console.firebase.google.com
-        // 2) Ative "Firestore Database" (modo produção)
-        // 3) Em "Configurações do projeto > Seus apps > Web", copie as chaves para o objeto abaixo
-        // 4) Nas Regras do Firestore, use algo como:
-        //
-        //   rules_version = '2';
-        //   service cloud.firestore {
-        //     match /databases/{database}/documents {
-        //       match /gallery_objects/{docId} {
-        //         allow read: if true;
-        //         allow create: if request.resource.data.keys().hasAll(['name','author','code','hash','createdAt','likes'])
-        //                       && request.resource.data.likes == 0
-        //                       && request.resource.data.code is string
-        //                       && request.resource.data.code.size() < 20000
-        //                       && request.resource.data.name.size() < 80
-        //                       && request.resource.data.author.size() < 60;
-        //         allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
-        //                       && request.resource.data.likes == resource.data.likes + 1;
-        //         allow delete: if false;
-        //       }
-        //     }
-        //   }
-        //
-        // Isso impede edição/remoção por terceiros, permite apenas curtidas incrementais,
-        // e valida no servidor que o envio tem o formato esperado (defesa extra além da
-        // validação de código feita no cliente logo abaixo).
 
         const firebaseConfig = {
              apiKey: "AIzaSyAnXII96RwOSs7p-cdvmch7_S3A2-rcLEc",
@@ -917,13 +924,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let galleryLoadingFlag = false;
         const GALLERY_PAGE_SIZE = 20;
 
-        // Hash SHA-256 do código: usado como "código único" da criação para bloquear duplicatas.
         async function sha256Hex(str) {
             const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // Validação heurística: bloqueia envio de coisas que não são criações geradas por este app.
         function isValidCreationCode(code) {
             if (!code || typeof code !== 'string') return false;
             if (code.length < 20 || code.length > 20000) return false;
@@ -955,7 +960,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 localStorage.setItem('voxel_author_name', authorName);
                 const hash = await sha256Hex(obj.code);
 
-                // Bloqueia duplicatas: se já existe uma criação com o mesmo hash de código, recusa o envio.
                 const existing = await galleryDb.collection('gallery_objects').where('hash', '==', hash).limit(1).get();
                 if (!existing.empty) {
                     alert(i18n[currentLang].uploadDupError);
@@ -1050,6 +1054,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                         <button onclick="viewGalleryItem('${it.id}')" style="padding:5px 10px; background:#222; border:1px solid #555;">${i18n[currentLang].btnViewGallery}</button>
                         <button onclick="importGalleryItem('${it.id}')" style="padding:5px 10px; background:#336600; border-color:#55ff00; color:#55ff00;">${i18n[currentLang].btnImportGallery}</button>
                         <button onclick="likeGalleryItem('${it.id}', event)" style="padding:5px 10px; background:#440022; border-color:#ff5599; color:#ff5599;">${i18n[currentLang].btnLike}</button>
+                        ${isAdmin ? `<button onclick="deleteGalleryItem('${it.id}', event)" style="padding:5px 10px; background:#550000; border-color:#ff0000; color:#ff0000;">🗑️</button>` : ''}
                     </div>
                 `;
                 listDiv.appendChild(item);
@@ -1084,18 +1089,39 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         async function likeGalleryItem(id, event) {
             if (event) event.stopPropagation();
             if (!galleryEnabled) return;
+            
+            const localKey = 'liked_' + id;
+            if (localStorage.getItem(localKey)) {
+                alert(currentLang === 'en' ? "You already liked this!" : "Você já curtiu esta criação!");
+                return;
+            }
+            
             try {
                 const ref = galleryDb.collection('gallery_objects').doc(id);
                 await galleryDb.runTransaction(async (t) => {
                     const doc = await t.get(ref);
-                    const current = (doc.data().likes || 0);
-                    t.update(ref, { likes: current + 1 });
+                    const data = doc.data();
+                    
+                    const likedIPs = data.likedIPs || [];
+                    if (likedIPs.includes(userIP) && userIP !== 'unknown') {
+                        throw new Error("ALREADY_LIKED_IP");
+                    }
+                    
+                    likedIPs.push(userIP);
+                    t.update(ref, { likes: (data.likes || 0) + 1, likedIPs: likedIPs });
                 });
+                
+                localStorage.setItem(localKey, '1');
                 const it = galleryItems.find(g => g.id === id);
                 if (it) it.likes = (it.likes || 0) + 1;
                 renderGalleryList();
             } catch(e) {
-                console.error("Erro ao curtir:", e);
+                if (e.message === "ALREADY_LIKED_IP") {
+                    alert(currentLang === 'en' ? "This IP already liked this creation!" : "Este IP já curtiu esta criação!");
+                } else {
+                    console.error("Erro ao curtir:", e);
+                    alert("Could not register like on server. It might be due to strict database rules.");
+                }
             }
         }
 
@@ -1251,7 +1277,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const sortMode = sortSelect ? sortSelect.value : 'dateDesc';
             const extraFilter = filterSelect ? filterSelect.value : 'all';
 
-            // Filter
             let filtered = voxelObjects.map((obj, i) => ({ obj, index: i })).filter(item => {
                 const o = item.obj;
                 if (searchQuery && !o.name.toLowerCase().includes(searchQuery) && !(o.tags && o.tags.join(' ').toLowerCase().includes(searchQuery))) return false;
@@ -1259,7 +1284,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 return true;
             });
 
-            // Sort
             filtered.sort((a, b) => {
                 const oa = a.obj;
                 const ob = b.obj;
@@ -1338,7 +1362,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 });
             }
             
-            // Extract all unique tags for the tag filter header
             const allTags = new Set();
             voxelObjects.forEach(o => (o.tags||[]).forEach(t => allTags.add(t)));
             const tagsContainer = document.getElementById('tags-container');
@@ -1377,7 +1400,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 renderObjectsList();
             }
         }
-
         // ==========================================
         // IMPORT / EXPORT LOGIC
         // ==========================================
@@ -1655,10 +1677,10 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             charW = 6 * asciiScale;
             charH = 10 * asciiScale;
             
-            asciiContainer.style.transform = \`scale(\${asciiScale})\`;
+            asciiContainer.style.transform = 'scale(' + asciiScale + ')';
             asciiContainer.style.transformOrigin = 'top left';
-            asciiContainer.style.width = \`\${100 / asciiScale}%\`;
-            asciiContainer.style.height = \`\${100 / asciiScale}%\`;
+            asciiContainer.style.width = (100 / asciiScale) + '%';
+            asciiContainer.style.height = (100 / asciiScale) + '%';
             
             setupAsciiGrid();
         }
@@ -1684,7 +1706,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         setupAsciiGrid();
         window.addEventListener('resize', setupAsciiGrid);
         
-        // Initial setup
         setRenderMode(currentRenderMode);
 
         const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
@@ -1805,7 +1826,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 
                 if (controlMode === 'fpv_room') {
                     const pos = controls.getObject().position;
-                    const limit = 28.5; // (60 / 2 - 1.5)
+                    const limit = 28.5;
                     if (pos.x > limit) pos.x = limit;
                     if (pos.x < -limit) pos.x = -limit;
                     if (pos.z > limit) pos.z = limit;
@@ -1830,7 +1851,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     }
                     asciiLines.push(rowStr);
                 }
-                asciiContainer.textContent = asciiLines.join('\\n');
+                asciiContainer.textContent = asciiLines.join('\n');
             }
         }
         animate();
@@ -1918,9 +1939,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             window.currentSpawnId = null;
         }
 
-        // ==========================================
-        // GEMINI API CALL
-        // ==========================================
         async function generateObject() {
             const apiKey = localStorage.getItem('gemini_api_key');
             if (!apiKey) {
@@ -1999,7 +2017,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 
                 enterSimpleView(0);
                 
-                // Auto generate thumbnail after allowing time to render
                 setTimeout(() => {
                     const asciiEl = document.getElementById('ascii-container');
                     if (asciiEl && asciiEl.textContent) {
@@ -2030,9 +2047,6 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
         }
 
-        // ==========================================
-        // THREE.JS & ASCII RENDER ENGINE
-        // ==========================================
         window.scene = new THREE.Scene();
         window.scene.background = new THREE.Color(0x000000);
         window.scene.fog = new THREE.FogExp2(0x000000, 0.02);
@@ -2070,8 +2084,8 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             const btnHud = document.getElementById('render-btn-hud');
             
             const prefix = currentLang === 'en' ? 'Mode' : currentLang === 'es' ? 'Modo' : currentLang === 'ja' ? 'モード' : 'Modo';
-            if (btnMenu) btnMenu.innerText = `${prefix}: ${renderModes[currentRenderMode]} (M)`;
-            if (btnHud) btnHud.innerText = `${prefix}: ${renderModes[currentRenderMode]} (M)`;
+            if (btnMenu) btnMenu.innerText = prefix + ': ' + renderModes[currentRenderMode] + ' (M)';
+            if (btnHud) btnHud.innerText = prefix + ': ' + renderModes[currentRenderMode] + ' (M)';
             
             const canvas = window.renderer.domElement;
             
@@ -2120,14 +2134,14 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             charW = 6 * asciiScale;
             charH = 10 * asciiScale;
             
-            asciiContainer.style.transform = `scale(${asciiScale})`;
+            asciiContainer.style.transform = 'scale(' + asciiScale + ')';
             asciiContainer.style.transformOrigin = 'top left';
-            asciiContainer.style.width = `${100 / asciiScale}%`;
-            asciiContainer.style.height = `${100 / asciiScale}%`;
+            asciiContainer.style.width = (100 / asciiScale) + '%';
+            asciiContainer.style.height = (100 / asciiScale) + '%';
             
             const prefix = currentLang === 'en' ? 'Resolution' : currentLang === 'es' ? 'Resolución' : currentLang === 'ja' ? '解像度' : 'Resolução';
-            if (resBtnMenu) resBtnMenu.innerText = `${prefix}: ${label} (V)`;
-            if (resBtnHud) resBtnHud.innerText = `${prefix}: ${label} (V)`;
+            if (resBtnMenu) resBtnMenu.innerText = prefix + ': ' + label + ' (V)';
+            if (resBtnHud) resBtnHud.innerText = prefix + ': ' + label + ' (V)';
             
             setupAsciiGrid();
         }
@@ -2178,6 +2192,22 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         window.scene.add(window.roomGroup);
 
         let currentCustomObjects = [];
+        let baseBodyElements = new Set();
+        Array.from(document.body.children).forEach(el => baseBodyElements.add(el));
+        document.addEventListener("DOMContentLoaded", () => {
+            Array.from(document.body.children).forEach(el => baseBodyElements.add(el));
+        });
+
+        function clearGeneratedUI() {
+            if (baseBodyElements.size === 0) {
+                Array.from(document.body.children).forEach(el => baseBodyElements.add(el));
+            }
+            Array.from(document.body.children).forEach(el => {
+                if (!baseBodyElements.has(el) && el.tagName !== 'SCRIPT' && el.id !== 'ascii-container' && el.id !== 'crosshair' && el.id !== 'ui-layer' && el.tagName !== 'CANVAS') {
+                    el.remove();
+                }
+            });
+        }
         
         const originalAdd = window.scene.add.bind(window.scene);
         window.scene.add = function(...objects) {
@@ -2207,6 +2237,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             currentCustomObjects.forEach(obj => window.scene.remove(obj));
             currentCustomObjects = [];
             currentSceneData = [];
+            clearGeneratedUI();
         }
 
         const orbitControls = new THREE.OrbitControls(window.camera, document.body);
@@ -2398,6 +2429,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             orbitControls.enabled = false;
             document.getElementById('hud').classList.remove('active');
             document.getElementById('crosshair').classList.remove('active');
+            clearGeneratedUI();
             showPanel('panel-menu');
         }
 
