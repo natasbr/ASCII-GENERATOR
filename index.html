@@ -333,11 +333,8 @@
             <p data-i18n="exportRenderMode" style="margin-top: 10px;">Modo Gráfico Inicial:</p>
             <select id="export-render-input">
                 <option value="0">ASCII</option>
-                <option value="1">Real 3D</option>
-                <option value="2">Wireframe</option>
-                <option value="3">RTX</option>
-                <option value="4">Normals</option>
-                <option value="5">Depth</option>
+                <option value="1">ASCII (Color)</option>
+                <option value="2">3D</option>
             </select>
             
             <p data-i18n="exportControlMode" style="margin-top: 10px;">Modo de Controle:</p>
@@ -1658,39 +1655,25 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let asciiScale = 1.0;
         let currentResLevel = typeof initialResLevel !== 'undefined' ? initialResLevel : 0;
         let currentRenderMode = initialRenderMode;
-        const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
+        const renderModes = ["ASCII", "ASCII (Color)", "3D"];
 
         function setRenderMode(mode) {
             currentRenderMode = mode % renderModes.length;
             const canvas = window.renderer.domElement;
             
-            if (currentRenderMode === 0) {
+            if (currentRenderMode === 0 || currentRenderMode === 1) {
                 document.getElementById('ascii-container').style.display = 'block';
                 canvas.style.opacity = '0';
-                
                 window.renderer.toneMapping = THREE.NoToneMapping;
             } else {
                 document.getElementById('ascii-container').style.display = 'none';
                 canvas.style.opacity = '1';
                 canvas.style.pointerEvents = 'auto';
-                
-                if (currentRenderMode === 3) {
-                    window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    window.renderer.toneMappingExposure = 1.2;
-                } else {
-                    window.renderer.toneMapping = THREE.NoToneMapping;
-                    window.renderer.toneMappingExposure = 1.0;
-                }
+                window.renderer.toneMapping = THREE.NoToneMapping;
+                window.renderer.toneMappingExposure = 1.0;
             }
             
             window.scene.overrideMaterial = null;
-            if (currentRenderMode === 2) {
-                window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-            } else if (currentRenderMode === 4) {
-                window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
-            } else if (currentRenderMode === 5) {
-                window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
-            }
             
             setupAsciiGrid();
         }
@@ -1721,7 +1704,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         function setupAsciiGrid() {
-            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0) {
+            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0 && currentRenderMode !== 1) {
                 window.renderer.setSize(window.innerWidth, window.innerHeight);
                 window.camera.aspect = window.innerWidth / window.innerHeight;
                 window.camera.updateProjectionMatrix();
@@ -1875,20 +1858,46 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             prevTime = time;
 
             renderer.render(scene, camera);
-            if (currentRenderMode === 0) {
+            if (currentRenderMode === 0 || currentRenderMode === 1) {
                 gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
                 
-                let asciiLines = [];
-                for (let y = rows - 1; y >= 0; y--) {
-                    let rowStr = "";
-                    for (let x = 0; x < cols; x++) {
-                        const idx = (y * cols + x) * 4;
-                        const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
-                        rowStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+                if (currentRenderMode === 0) {
+                    let asciiLines = [];
+                    for (let y = rows - 1; y >= 0; y--) {
+                        let rowStr = "";
+                        for (let x = 0; x < cols; x++) {
+                            const idx = (y * cols + x) * 4;
+                            const luma = 0.299*pixels[idx] + 0.587*pixels[idx+1] + 0.114*pixels[idx+2];
+                            rowStr += ramp[Math.floor((luma/255)*(ramp.length-1))];
+                        }
+                        asciiLines.push(rowStr);
                     }
-                    asciiLines.push(rowStr);
+                    asciiContainer.textContent = asciiLines.join('\\n');
+                } else {
+                    let asciiHTML = "";
+                    let lastColor = "";
+                    for (let y = rows - 1; y >= 0; y--) {
+                        for (let x = 0; x < cols; x++) {
+                            const idx = (y * cols + x) * 4;
+                            const r = pixels[idx];
+                            const g = pixels[idx+1];
+                            const b = pixels[idx+2];
+                            const luma = 0.299*r + 0.587*g + 0.114*b;
+                            const charIndex = Math.floor((luma/255)*(ramp.length-1));
+                            
+                            const hex = "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+                            if (hex !== lastColor) {
+                                if (lastColor !== "") asciiHTML += "</span>";
+                                asciiHTML += \`<span style="color:\${hex}">\`;
+                                lastColor = hex;
+                            }
+                            asciiHTML += ramp[charIndex];
+                        }
+                        asciiHTML += "\\n";
+                    }
+                    if (lastColor !== "") asciiHTML += "</span>";
+                    asciiContainer.innerHTML = asciiHTML;
                 }
-                asciiContainer.textContent = asciiLines.join('\\n');
             }
         }
         animate();
@@ -2133,7 +2142,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         let asciiScale = 1.0;
         let currentResLevel = 0;
         let currentRenderMode = 0;
-        const renderModes = ["ASCII", "Real 3D", "Wireframe", "RTX", "Normals", "Depth"];
+        const renderModes = ["ASCII", "ASCII (Color)", "3D"];
 
         function cycleRenderMode(preserveMode = false) {
             if (!preserveMode) {
@@ -2141,40 +2150,36 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             }
             const btnMenu = document.getElementById('render-btn-menu');
             const btnHud = document.getElementById('render-btn-hud');
+            const resBtnMenu = document.getElementById('res-btn-menu');
+            const resBtnHud = document.getElementById('res-btn-hud');
             
             const prefix = currentLang === 'en' ? 'Mode' : currentLang === 'es' ? 'Modo' : currentLang === 'ja' ? 'モード' : 'Modo';
             if (btnMenu) btnMenu.innerText = prefix + ': ' + renderModes[currentRenderMode] + ' (M)';
             if (btnHud) btnHud.innerText = prefix + ': ' + renderModes[currentRenderMode] + ' (M)';
             
+            if (currentRenderMode === 0 || currentRenderMode === 1) {
+                if (resBtnMenu) resBtnMenu.style.display = 'block';
+                if (resBtnHud) resBtnHud.style.display = 'block';
+            } else {
+                if (resBtnMenu) resBtnMenu.style.display = 'none';
+                if (resBtnHud) resBtnHud.style.display = 'none';
+            }
+            
             const canvas = window.renderer.domElement;
             
-            if (currentRenderMode === 0) {
+            if (currentRenderMode === 0 || currentRenderMode === 1) {
                 document.getElementById('ascii-container').style.display = 'block';
                 canvas.style.opacity = '0';
-                
                 window.renderer.toneMapping = THREE.NoToneMapping;
             } else {
                 document.getElementById('ascii-container').style.display = 'none';
                 canvas.style.opacity = '1';
                 canvas.style.pointerEvents = 'auto';
-                
-                if (currentRenderMode === 3) {
-                    window.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    window.renderer.toneMappingExposure = 1.2;
-                } else {
-                    window.renderer.toneMapping = THREE.NoToneMapping;
-                    window.renderer.toneMappingExposure = 1.0;
-                }
+                window.renderer.toneMapping = THREE.NoToneMapping;
+                window.renderer.toneMappingExposure = 1.0;
             }
             
             window.scene.overrideMaterial = null;
-            if (currentRenderMode === 2) {
-                window.scene.overrideMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-            } else if (currentRenderMode === 4) {
-                window.scene.overrideMaterial = new THREE.MeshNormalMaterial();
-            } else if (currentRenderMode === 5) {
-                window.scene.overrideMaterial = new THREE.MeshDepthMaterial();
-            }
             
             setupAsciiGrid();
         }
@@ -2210,7 +2215,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
         }
 
         function setupAsciiGrid() {
-            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0) {
+            if (typeof currentRenderMode !== 'undefined' && currentRenderMode !== 0 && currentRenderMode !== 1) {
                 window.renderer.setSize(window.innerWidth, window.innerHeight);
                 window.camera.aspect = window.innerWidth / window.innerHeight;
                 window.camera.updateProjectionMatrix();
@@ -2618,26 +2623,52 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             prevTime = time;
 
             window.renderer.render(window.scene, window.camera);
-            if (currentRenderMode === 0) {
+            if (currentRenderMode === 0 || currentRenderMode === 1) {
                 gl.readPixels(0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
                 
-                let asciiLines = [];
-                for (let y = rows - 1; y >= 0; y--) {
-                    let rowStr = "";
-                    for (let x = 0; x < cols; x++) {
-                        const index = (y * cols + x) * 4;
-                        const r = pixels[index];
-                        const g = pixels[index + 1];
-                        const b = pixels[index + 2];
-                        
-                        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-                        const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
-                        rowStr += ramp[charIndex];
+                if (currentRenderMode === 0) {
+                    let asciiLines = [];
+                    for (let y = rows - 1; y >= 0; y--) {
+                        let rowStr = "";
+                        for (let x = 0; x < cols; x++) {
+                            const index = (y * cols + x) * 4;
+                            const r = pixels[index];
+                            const g = pixels[index + 1];
+                            const b = pixels[index + 2];
+                            
+                            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                            const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
+                            rowStr += ramp[charIndex];
+                        }
+                        asciiLines.push(rowStr);
                     }
-                    asciiLines.push(rowStr);
+                    asciiContainer.textContent = asciiLines.join('\n');
+                } else {
+                    let asciiHTML = "";
+                    let lastColor = "";
+                    for (let y = rows - 1; y >= 0; y--) {
+                        for (let x = 0; x < cols; x++) {
+                            const index = (y * cols + x) * 4;
+                            const r = pixels[index];
+                            const g = pixels[index + 1];
+                            const b = pixels[index + 2];
+                            
+                            const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                            const charIndex = Math.floor((luma / 255) * (ramp.length - 1));
+                            
+                            const hex = "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+                            if (hex !== lastColor) {
+                                if (lastColor !== "") asciiHTML += "</span>";
+                                asciiHTML += `<span style="color:${hex}">`;
+                                lastColor = hex;
+                            }
+                            asciiHTML += ramp[charIndex];
+                        }
+                        asciiHTML += "\n";
+                    }
+                    if (lastColor !== "") asciiHTML += "</span>";
+                    asciiContainer.innerHTML = asciiHTML;
                 }
-                
-                asciiContainer.textContent = asciiLines.join('\n');
             }
         }
 
