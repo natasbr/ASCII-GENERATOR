@@ -1000,12 +1000,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                     thumbnail: obj.thumbnail || "",
                     createdAt: Date.now(),
                     likes: 0,
-                    likedIPs: []
+                    likedIPs: [],
+                    tags: (obj.tags && Array.isArray(obj.tags)) ? obj.tags.map(t => String(t).substring(0, 20)).slice(0, 10) : []
                 };
-                
-                if (obj.tags && Array.isArray(obj.tags) && obj.tags.length > 0) {
-                    docData.tags = obj.tags;
-                }
 
                 await galleryDb.collection('gallery_objects').add(docData);
 
@@ -1457,7 +1454,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 try {
                     if (file.name.toLowerCase().endsWith('.json')) {
                         const parsedData = JSON.parse(content);
-                        if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
+                        if ((Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) || (parsedData.items && Array.isArray(parsedData.items))) {
                             alert(i18n[currentLang].alertImportScene);
                             return;
                         } else if (Array.isArray(parsedData)) {
@@ -1969,9 +1966,19 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             reader.onload = function(e) {
                 try {
                     const parsedData = JSON.parse(e.target.result);
+                    let sceneItems = null;
+                    let extraData = null;
+                    
                     if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
+                        sceneItems = parsedData;
+                    } else if (parsedData.items && Array.isArray(parsedData.items)) {
+                        sceneItems = parsedData.items;
+                        extraData = parsedData;
+                    }
+
+                    if (sceneItems) {
                         const targetMode = window.sceneImportMode || 'free_fpv';
-                        loadSceneIntoMode(parsedData, targetMode);
+                        loadSceneIntoMode(sceneItems, targetMode, extraData);
                     } else {
                         alert(i18n[currentLang].alertSceneInvalid);
                     }
@@ -2026,12 +2033,11 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             
             if (extraData) {
                 if (extraData.renderMode !== undefined) {
-                    setRenderMode(extraData.renderMode);
+                    currentRenderMode = extraData.renderMode;
+                    cycleRenderMode(true);
                 }
                 if (extraData.resLevel !== undefined) {
-                    currentResLevel = extraData.resLevel;
-                    // trigger resolution update if not default? Actually cycleResolution loops it, but we can set it and call setupAsciiGrid
-                    setupAsciiGrid();
+                    setResolution(extraData.resLevel);
                 }
                 if (extraData.cameraPos) {
                     window.camera.position.fromArray(extraData.cameraPos);
