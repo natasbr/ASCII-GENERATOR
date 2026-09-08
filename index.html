@@ -1457,7 +1457,7 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
                 try {
                     if (file.name.toLowerCase().endsWith('.json')) {
                         const parsedData = JSON.parse(content);
-                        if ((Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) || (parsedData.items && Array.isArray(parsedData.items))) {
+                        if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
                             alert(i18n[currentLang].alertImportScene);
                             return;
                         } else if (Array.isArray(parsedData)) {
@@ -1969,19 +1969,9 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             reader.onload = function(e) {
                 try {
                     const parsedData = JSON.parse(e.target.result);
-                    let sceneItems = null;
-                    let extraData = null;
-                    
                     if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].position) {
-                        sceneItems = parsedData;
-                    } else if (parsedData.items && Array.isArray(parsedData.items)) {
-                        sceneItems = parsedData.items;
-                        extraData = parsedData;
-                    }
-
-                    if (sceneItems) {
                         const targetMode = window.sceneImportMode || 'free_fpv';
-                        loadSceneIntoMode(sceneItems, targetMode, extraData);
+                        loadSceneIntoMode(parsedData, targetMode);
                     } else {
                         alert(i18n[currentLang].alertSceneInvalid);
                     }
@@ -2036,11 +2026,12 @@ Faça o objeto ter o tamanho aproximado de 5x5x5, ou algo que caiba no quarto, e
             
             if (extraData) {
                 if (extraData.renderMode !== undefined) {
-                    currentRenderMode = extraData.renderMode;
-                    cycleRenderMode(true);
+                    setRenderMode(extraData.renderMode);
                 }
                 if (extraData.resLevel !== undefined) {
-                    setResolution(extraData.resLevel);
+                    currentResLevel = extraData.resLevel;
+                    // trigger resolution update if not default? Actually cycleResolution loops it, but we can set it and call setupAsciiGrid
+                    setupAsciiGrid();
                 }
                 if (extraData.cameraPos) {
                     window.camera.position.fromArray(extraData.cameraPos);
